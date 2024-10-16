@@ -38,3 +38,10 @@ declare interface Failure<E> {
 declare interface Prototype<T extends object> {
   clone(): T;
 }
+
+/**
+ * Represents a type that requires at least one element of type T.
+ *
+ * @template T - The type of the elements.
+ */
+declare type AtLeastOne<T> = [T, ...T[]];

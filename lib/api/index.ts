@@ -3,7 +3,7 @@ import { assert } from "utils/assert";
 /**
  * Class representing an API client.
  */
-export class Api {
+export class Api implements Prototype<Api> {
   /**
    * Default configuration for the API client.
    * @private
@@ -183,7 +183,7 @@ export class Api {
    */
   #parseBody(body: RequestBody): Either<string, Error> {
     try {
-      return { kind: "success", value: JSON.stringify(body) };
+      return { kind: "success", value: typeof body === "string" ? body : JSON.stringify(body) };
     } catch {
       return {
         kind: "failure",
@@ -254,5 +254,14 @@ export class Api {
         value: new Error(`An error occurred while trying to make a request: ${(error as Error).message}`),
       };
     }
+  }
+
+  /**
+   * Creates a new instance of the Api class with the same configuration.
+   *
+   * @returns {Api} A new Api instance with the same base URL and default settings.
+   */
+  clone(): Api {
+    return new Api(this.#config.baseUrl, this.#config.defaults);
   }
 }
