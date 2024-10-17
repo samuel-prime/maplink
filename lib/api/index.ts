@@ -1,4 +1,6 @@
+import { join } from "node:path";
 import { assert } from "utils/assert";
+import { mergeObjects } from "utils/merge-objects";
 
 /**
  * Class representing an API client.
@@ -8,7 +10,7 @@ export class Api implements Prototype<Api> {
    * Default configuration for the API client.
    * @private
    */
-  static readonly #DEFAULTS: ApiDefaults = { headers: {} };
+  static readonly #DEFAULTS: ApiDefaults = { headers: {}, params: {} };
 
   /**
    * Configuration for the API client instance.
@@ -22,7 +24,7 @@ export class Api implements Prototype<Api> {
    * @param defaults - Default configuration overrides.
    */
   constructor(baseUrl: string, defaults: Partial<ApiDefaults> = {}) {
-    this.#config = { baseUrl, defaults: this.#mergeDefaults(defaults) };
+    this.#config = { baseUrl: new URL(baseUrl), defaults: this.#mergeDefaults(defaults) };
   }
 
   /**
@@ -79,6 +81,15 @@ export class Api implements Prototype<Api> {
   }
 
   /**
+   * Gets the base URL from the configuration.
+   *
+   * @returns {URL} The base URL.
+   */
+  get baseUrl(): URL {
+    return this.#config.baseUrl;
+  }
+
+  /**
    * Sets the Bearer token for authorization.
    * @param token - The Bearer token.
    */
@@ -107,6 +118,28 @@ export class Api implements Prototype<Api> {
   }
 
   /**
+   * Appends a header to the default headers configuration.
+   *
+   * @param key - The name of the header to append. This should be a valid key from `RequestCommonHeaderNames` and a string.
+   * @param value - The value of the header to append.
+   * @returns void
+   */
+  appendHeader(key: RequestCommonHeaderNames & (string & {}), value: string): void {
+    this.#config.defaults.headers[key] = value;
+  }
+
+  /**
+   * Appends a parameter to the configuration's default parameters.
+   *
+   * @param key - The key of the parameter to append.
+   * @param value - The value of the parameter to append.
+   * @returns void
+   */
+  appendParam(key: string, value: string | number | boolean): void {
+    this.#config.defaults.params[key] = String(value);
+  }
+
+  /**
    * Merges default configuration with provided overrides.
    * @param defaults - Default configuration overrides.
    * @returns The merged configuration.
@@ -116,19 +149,9 @@ export class Api implements Prototype<Api> {
     return {
       ...Api.#DEFAULTS,
       ...defaults,
-      headers: this.#mergeHeaders(Api.#DEFAULTS.headers, defaults.headers),
+      headers: mergeObjects(Api.#DEFAULTS.headers, defaults.headers ?? {}),
+      params: mergeObjects(Api.#DEFAULTS.params, defaults.params ?? {}),
     };
-  }
-
-  /**
-   * Merges base headers with provided headers.
-   * @param baseHeaders - The base headers.
-   * @param headers - The headers to merge.
-   * @returns The merged headers.
-   * @private
-   */
-  #mergeHeaders(baseHeaders: RequestHeaders, headers: RequestHeaders = {}): RequestHeaders {
-    return { ...baseHeaders, ...headers };
   }
 
   /**
@@ -140,10 +163,11 @@ export class Api implements Prototype<Api> {
    * @private
    */
   #parseArgs(path: string, config?: RequestConfig, body?: RequestBody): Either<RequestData, Error> {
-    const urlResult = this.#buildUrl(path, config?.params);
-    if (urlResult.kind === "failure") return urlResult;
+    const headers = mergeObjects(this.#config.defaults.headers, config?.headers ?? {});
+    const params = mergeObjects(this.#config.defaults.params, config?.params ?? {});
 
-    const headers = this.#mergeHeaders(this.#config.defaults.headers, config?.headers);
+    const urlResult = this.#buildUrl(path, params);
+    if (urlResult.kind === "failure") return urlResult;
 
     if (config?.webhook && typeof body === "object") {
       (body as any).callback = config.webhook;
@@ -164,7 +188,8 @@ export class Api implements Prototype<Api> {
    */
   #buildUrl(path: string, params: RequestParams = {}): Either<string, Error> {
     try {
-      const url = new URL(path, this.#config.baseUrl);
+      const url = new URL(this.#config.baseUrl);
+      url.pathname = join(url.pathname, path);
       url.search = new URLSearchParams(params).toString();
       return { kind: "success", value: url.toString() };
     } catch {
@@ -262,6 +287,6 @@ export class Api implements Prototype<Api> {
    * @returns {Api} A new Api instance with the same base URL and default settings.
    */
   clone(): Api {
-    return new Api(this.#config.baseUrl, this.#config.defaults);
+    return new Api(this.#config.baseUrl.href, this.#config.defaults);
   }
 }

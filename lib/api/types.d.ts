@@ -48,13 +48,14 @@ declare interface RequestWebhook {
  */
 declare interface ApiDefaults {
   headers: RequestHeaders;
+  params: RequestParams;
 }
 
 /**
  * Represents the configuration for the API.
  */
 declare interface ApiConfig {
-  baseUrl: string;
+  baseUrl: URL;
   defaults: ApiDefaults;
 }
 
