@@ -14,7 +14,7 @@ export class Maplink {
     this.#api = new Api(config.url);
     this.#auth = new Auth({ api: this.#api, logger: this.#logger }, this.#config);
 
-    if (config.enableLogger !== false) this.#logger.disable();
+    if (config.enableLogger !== true) this.#logger.disable();
     if (config.initialize !== false) this.init();
   }
 
