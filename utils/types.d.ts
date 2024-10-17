@@ -49,13 +49,13 @@ declare interface Prototype<T extends object> {
  *
  * @example
  * ```typescript
- * type Numbers = AtLeastOneInArray<number>;
+ * type Numbers = NonEmptyArray<number>;
  * const validNumbers: Numbers = [1]; // Valid
  * const moreNumbers: Numbers = [1, 2, 3]; // Valid
- * const noNumbers: Numbers = []; // Error: Type '[]' is not assignable to type 'AtLeastOneInArray<number>'
+ * const noNumbers: Numbers = []; // Error: Type '[]' is not assignable to type 'NonEmptyArray<number>'
  * ```
  */
-declare type AtLeastOneInArray<T> = [T, ...T[]];
+declare type NonEmptyArray<T> = [T, ...T[]];
 
 /**
  * A utility type that ensures at least one of the specified keys is present in the given type `T`.
@@ -75,14 +75,14 @@ declare type AtLeastOneInArray<T> = [T, ...T[]];
  * }
  *
  * // At least one of 'id' or 'name' must be present
- * type UserWithIdOrName = AtLeastOneInObject<User, 'id' | 'name'>;
+ * type UserWithIdOrName = NonEmptyObject<User, 'id' | 'name'>;
  *
  * const user1: UserWithIdOrName = { id: '123' }; // Valid
  * const user2: UserWithIdOrName = { name: 'John' }; // Valid
  * const user3: UserWithIdOrName = { id: '123', name: 'John' }; // Valid
- * const user4: UserWithIdOrName = {}; // Error: Type '{}' is not assignable to type 'AtLeastOneInObject<User, "id" | "name">'
+ * const user4: UserWithIdOrName = {}; // Error: Type '{}' is not assignable to type 'NonEmptyObject<User, "id" | "name">'
  * ```
  */
-declare type AtLeastOneInObject<T, Keys extends keyof T = keyof T> = {
+declare type NonEmptyObject<T, Keys extends keyof T = keyof T> = {
   [K in Keys]-?: Required<Pick<T, K>> & Partial<Omit<T, K>>;
 }[Keys];

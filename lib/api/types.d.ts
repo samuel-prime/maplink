@@ -1,10 +1,37 @@
+// API Types ---------------------------------------------------------------------------------------
+
 /**
- * Represents the HTTP methods used in requests.
+ * Configuration for the API.
+ */
+declare interface ApiConfig {
+  baseUrl: Url;
+  defaults: ApiDefaults;
+}
+
+/**
+ * Default settings for the API.
+ */
+declare interface ApiDefaults {
+  headers: RequestHeaders;
+  params: RequestParams;
+}
+
+/**
+ * Events related to the API.
+ */
+declare interface ApiEvents {
+  clone: [Api];
+}
+
+// HTTP Related Types ------------------------------------------------------------------------------
+
+/**
+ * HTTP methods.
  */
 declare type HttpMethods = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 /**
- * Common header names used in requests.
+ * Common header names for HTTP requests.
  */
 declare type RequestCommonHeaderNames =
   | "Content-Type"
@@ -16,26 +43,26 @@ declare type RequestCommonHeaderNames =
   | "Origin";
 
 /**
- * Represents the headers of a request.
+ * Headers for HTTP requests.
  */
 declare interface RequestHeaders {
   [key: RequestCommonHeaderNames | (string & {})]: string;
 }
 
 /**
- * Represents the body of a request.
+ * Body of an HTTP request.
  */
 declare type RequestBody = string | number | object | undefined;
 
 /**
- * Represents the parameters of a request.
+ * Parameters for HTTP requests.
  */
 declare interface RequestParams {
   [key: string]: string;
 }
 
 /**
- * Represents the webhook configuration for a request.
+ * Webhook configuration for HTTP requests.
  */
 declare interface RequestWebhook {
   url: string;
@@ -44,23 +71,7 @@ declare interface RequestWebhook {
 }
 
 /**
- * Represents the default configuration for API requests.
- */
-declare interface ApiDefaults {
-  headers: RequestHeaders;
-  params: RequestParams;
-}
-
-/**
- * Represents the configuration for the API.
- */
-declare interface ApiConfig {
-  baseUrl: URL;
-  defaults: ApiDefaults;
-}
-
-/**
- * Represents the configuration for a request.
+ * Configuration for an HTTP request.
  */
 declare type RequestConfig = Partial<{
   params: RequestParams;
@@ -69,12 +80,13 @@ declare type RequestConfig = Partial<{
 }>;
 
 /**
- * Represents the data of a request.
+ * Data for an HTTP request.
  */
 declare type RequestData = [string, RequestHeaders, string];
 
 /**
- * Represents the args of a request.
+ * Arguments for an HTTP request.
+ * @template T - The HTTP method.
  */
 declare type RequestArgs<T extends HttpMethods> = T extends "GET" | "DELETE"
   ? [string, RequestConfig?]

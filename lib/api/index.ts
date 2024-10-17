@@ -1,116 +1,128 @@
-import { join } from "node:path";
-import { assert } from "utils/assert";
-import { mergeObjects } from "utils/merge-objects";
+import assert from "node:assert";
+import EventEmitter from "node:events";
+import { deepMerge } from "utils/deep-merge";
+import { Url } from "./url";
 
 /**
- * Class representing an API client.
+ * The `Api` class provides a wrapper around HTTP requests, allowing for easy configuration
+ * and management of API calls. It supports various HTTP methods such as GET, POST, PATCH, PUT, and DELETE.
+ *
+ * The class also includes features for setting default headers and parameters, handling authorization tokens,
+ * and emitting events through an `EventEmitter`.
+ *
+ * Example usage:
+ *
+ * ```typescript
+ * const api = new Api("https://api.example.com", { headers: { "Content-Type": "application/json" } });
+ *
+ * api.get("/endpoint").then(response => {
+ *   if (response.kind === "success") {
+ *     console.log(response.value);
+ *   } else {
+ *     console.error(response.value);
+ *   }
+ * });
+ * ```
+ *
+ * @template T - The type of the successful response data.
+ * @template E - The type of the error response data.
  */
 export class Api implements Prototype<Api> {
-  /**
-   * Default configuration for the API client.
-   * @private
-   */
   static readonly #DEFAULTS: ApiDefaults = { headers: {}, params: {} };
 
-  /**
-   * Configuration for the API client instance.
-   * @private
-   */
+  readonly #eventEmitter: EventEmitter;
   readonly #config: ApiConfig;
 
-  /**
-   * Creates an instance of the API client.
-   * @param baseUrl - The base URL for the API.
-   * @param defaults - Default configuration overrides.
-   */
-  constructor(baseUrl: string, defaults: Partial<ApiDefaults> = {}) {
-    this.#config = { baseUrl: new URL(baseUrl), defaults: this.#mergeDefaults(defaults) };
+  constructor(baseUrl: string, defaults: Partial<ApiDefaults> = {}, emitter?: EventEmitter) {
+    this.#eventEmitter = emitter ?? new EventEmitter();
+    this.#config = { baseUrl: new Url(baseUrl), defaults: deepMerge(Api.#DEFAULTS, defaults) };
   }
 
-  /**
-   * Sends a GET request.
-   * @param path - The endpoint path.
-   * @param config - Optional request configuration.
-   * @returns A promise that resolves to either the response data or an error.
-   */
+  // Public Methods --------------------------------------------------------------------------------
+
   async get<T, E = unknown>(...[path, config]: RequestArgs<"GET">): Promise<Either<T, E | Error>> {
     return this.#request<T, E>("GET", path, undefined, config);
   }
 
-  /**
-   * Sends a POST request.
-   * @param path - The endpoint path.
-   * @param data - The request body data.
-   * @param config - Optional request configuration.
-   * @returns A promise that resolves to either the response data or an error.
-   */
   async post<T, E = unknown>(...[path, data, config]: RequestArgs<"POST">): Promise<Either<T, E | Error>> {
     return this.#request<T, E>("POST", path, data, config);
   }
 
-  /**
-   * Sends a PATCH request.
-   * @param path - The endpoint path.
-   * @param data - The request body data.
-   * @param config - Optional request configuration.
-   * @returns A promise that resolves to either the response data or an error.
-   */
   async patch<T, E = unknown>(...[path, data, config]: RequestArgs<"PATCH">): Promise<Either<T, E | Error>> {
     return this.#request<T, E>("PATCH", path, data, config);
   }
 
-  /**
-   * Sends a PUT request.
-   * @param path - The endpoint path.
-   * @param data - The request body data.
-   * @param config - Optional request configuration.
-   * @returns A promise that resolves to either the response data or an error.
-   */
   async put<T, E = unknown>(...[path, data, config]: RequestArgs<"PUT">): Promise<Either<T, E | Error>> {
     return this.#request<T, E>("PUT", path, data, config);
   }
 
-  /**
-   * Sends a DELETE request.
-   * @param path - The endpoint path.
-   * @param config - Optional request configuration.
-   * @returns A promise that resolves to either the response data or an error.
-   */
   async delete<T, E = unknown>(...[path, config]: RequestArgs<"DELETE">): Promise<Either<T, E | Error>> {
     return this.#request<T, E>("DELETE", path, undefined, config);
   }
 
   /**
-   * Gets the base URL from the configuration.
+   * Creates a new instance of the `Api` class with the same configuration and event emitter.
+   * Emits a "clone" event with the new `Api` instance.
    *
-   * @returns {URL} The base URL.
+   * @returns {Api} A new `Api` instance with the same configuration and event emitter.
    */
-  get baseUrl(): URL {
-    return this.#config.baseUrl;
+  clone(): Api {
+    const api = new Api(this.#config.baseUrl.href, this.#config.defaults, this.#eventEmitter);
+    this.#emit("clone", api);
+    return api;
   }
 
   /**
-   * Sets the Bearer token for authorization.
-   * @param token - The Bearer token.
+   * Registers a listener for the specified event.
    */
+  on<K extends keyof ApiEvents>(event: K, listener: (...args: ApiEvents[K]) => void): EventEmitter {
+    return this.#eventEmitter.on(event as string, listener);
+  }
+
+  // Getters and Setters ---------------------------------------------------------------------------
+
+  get baseUrl(): Url {
+    return this.#config.baseUrl;
+  }
+
   set bearerToken(token: string) {
     this.#setToken("Bearer", token);
   }
 
-  /**
-   * Sets the Basic token for authorization.
-   * @param token - The Basic token.
-   */
   set basicToken(token: string) {
     const base64Token = Buffer.from(token).toString("base64");
     this.#setToken("Basic", base64Token);
   }
 
   /**
-   * Sets the authorization token.
-   * @param type - The type of the token (e.g., Bearer, Basic).
-   * @param token - The token string.
-   * @private
+   * Sets a header for the instance's default headers.
+   *
+   * @param {Array} header - An array containing the header key and value.
+   */
+  set header([key, value]: [RequestCommonHeaderNames & (string & {}), string]) {
+    this.#config.defaults.headers[key] = value;
+  }
+
+  /**
+   * Sets a param for the instance's default params.
+   *
+   * @param {Array} header - An array containing the header key and value.
+   */
+  set param([key, value]: [string, string | number | boolean]) {
+    this.#config.defaults.params[key] = String(value);
+  }
+
+  // Private Methods -------------------------------------------------------------------------------
+
+  /**
+   * Emits an event with the specified arguments.
+   */
+  #emit<K extends keyof ApiEvents>(event: K, ...args: ApiEvents[K]): boolean {
+    return this.#eventEmitter.emit(event as string, ...args);
+  }
+
+  /**
+   * Sets the authorization token in the instance's default headers.
    */
   #setToken(type: string, token: string) {
     assert(typeof token === "string" && token, "The token must be a non-empty string.");
@@ -118,53 +130,36 @@ export class Api implements Prototype<Api> {
   }
 
   /**
-   * Appends a header to the default headers configuration.
-   *
-   * @param key - The name of the header to append. This should be a valid key from `RequestCommonHeaderNames` and a string.
-   * @param value - The value of the header to append.
-   * @returns void
+   * Builds the full URL for a request, including query parameters.
    */
-  appendHeader(key: RequestCommonHeaderNames & (string & {}), value: string): void {
-    this.#config.defaults.headers[key] = value;
+  #buildUrl(path: string, params: RequestParams = {}): Either<string, Error> {
+    try {
+      const url = new Url(this.#config.baseUrl);
+      url.endpoint = path;
+      url.search = new URLSearchParams(params).toString();
+      return { kind: "success", value: url.toString() };
+    } catch {
+      return { kind: "failure", value: new Error("An error occurred while trying to build the URL.") };
+    }
   }
 
   /**
-   * Appends a parameter to the configuration's default parameters.
-   *
-   * @param key - The key of the parameter to append.
-   * @param value - The value of the parameter to append.
-   * @returns void
+   * Parses the request body into a string format.
    */
-  appendParam(key: string, value: string | number | boolean): void {
-    this.#config.defaults.params[key] = String(value);
+  #parseBody(body: RequestBody): Either<string, Error> {
+    try {
+      return { kind: "success", value: typeof body === "string" ? body : JSON.stringify(body) };
+    } catch {
+      return { kind: "failure", value: new Error("An error occurred while trying to parse the body.") };
+    }
   }
 
   /**
-   * Merges default configuration with provided overrides.
-   * @param defaults - Default configuration overrides.
-   * @returns The merged configuration.
-   * @private
-   */
-  #mergeDefaults(defaults: Partial<ApiDefaults> = {}): ApiDefaults {
-    return {
-      ...Api.#DEFAULTS,
-      ...defaults,
-      headers: mergeObjects(Api.#DEFAULTS.headers, defaults.headers ?? {}),
-      params: mergeObjects(Api.#DEFAULTS.params, defaults.params ?? {}),
-    };
-  }
-
-  /**
-   * Parses request arguments.
-   * @param path - The endpoint path.
-   * @param config - Optional request configuration.
-   * @param body - Optional request body.
-   * @returns Either the parsed request data or an error.
-   * @private
+   * Parses the arguments for a request, including the URL, headers, and body.
    */
   #parseArgs(path: string, config?: RequestConfig, body?: RequestBody): Either<RequestData, Error> {
-    const headers = mergeObjects(this.#config.defaults.headers, config?.headers ?? {});
-    const params = mergeObjects(this.#config.defaults.params, config?.params ?? {});
+    const headers = Object.assign(this.#config.defaults.headers, config?.headers);
+    const params = Object.assign(this.#config.defaults.params, config?.params);
 
     const urlResult = this.#buildUrl(path, params);
     if (urlResult.kind === "failure") return urlResult;
@@ -180,48 +175,20 @@ export class Api implements Prototype<Api> {
   }
 
   /**
-   * Builds the full URL for the request.
-   * @param path - The endpoint path.
-   * @param params - Optional query parameters.
-   * @returns Either the full URL or an error.
-   * @private
+   * Parses the response data from a fetch request.
    */
-  #buildUrl(path: string, params: RequestParams = {}): Either<string, Error> {
+  async #parseResponse<T>(response: Response): Promise<Either<T, Error>> {
     try {
-      const url = new URL(this.#config.baseUrl);
-      url.pathname = join(url.pathname, path);
-      url.search = new URLSearchParams(params).toString();
-      return { kind: "success", value: url.toString() };
+      const data = await response.json();
+      return { kind: "success", value: data as T };
     } catch {
-      return {
-        kind: "failure",
-        value: new Error("An error occurred while trying to build the URL."),
-      };
+      return { kind: "failure", value: new Error("An error occurred while trying to parse the data.") };
     }
   }
 
   /**
-   * Parses the request body.
-   * @param body - The request body.
-   * @returns Either the parsed body or an error.
-   * @private
-   */
-  #parseBody(body: RequestBody): Either<string, Error> {
-    try {
-      return { kind: "success", value: typeof body === "string" ? body : JSON.stringify(body) };
-    } catch {
-      return {
-        kind: "failure",
-        value: new Error("An error occurred while trying to parse the body."),
-      };
-    }
-  }
-
-  /**
-   * Handles the response from the fetch request.
-   * @param response - The fetch response.
-   * @returns A promise that resolves to either the response data or an error.
-   * @private
+   * Handles the response from a fetch request, parsing the data and handling errors.
+   * It returns a success result if the response is OK, and a failure result otherwise.
    */
   async #handleResponse<T, E>(response: Response): Promise<Either<T, E | Error>> {
     const dataResult = await this.#parseResponse<T | E>(response);
@@ -233,31 +200,7 @@ export class Api implements Prototype<Api> {
   }
 
   /**
-   * Parses the response data.
-   * @param response - The fetch response.
-   * @returns A promise that resolves to either the parsed data or an error.
-   * @private
-   */
-  async #parseResponse<T>(response: Response): Promise<Either<T, Error>> {
-    try {
-      const data = await response.json();
-      return { kind: "success", value: data as T };
-    } catch {
-      return {
-        kind: "failure",
-        value: new Error("An error occurred while trying to parse the data."),
-      };
-    }
-  }
-
-  /**
-   * Sends an HTTP request.
-   * @param method - The HTTP method.
-   * @param path - The endpoint path.
-   * @param body - Optional request body.
-   * @param config - Optional request configuration.
-   * @returns A promise that resolves to either the response data or an error.
-   * @private
+   * Makes an HTTP request using the specified method, URL, body, and configuration.
    */
   async #request<T, E>(
     method: HttpMethods,
@@ -279,14 +222,5 @@ export class Api implements Prototype<Api> {
         value: new Error(`An error occurred while trying to make a request: ${(error as Error).message}`),
       };
     }
-  }
-
-  /**
-   * Creates a new instance of the Api class with the same configuration.
-   *
-   * @returns {Api} A new Api instance with the same base URL and default settings.
-   */
-  clone(): Api {
-    return new Api(this.#config.baseUrl.href, this.#config.defaults);
   }
 }
