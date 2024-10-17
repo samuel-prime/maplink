@@ -1,12 +1,27 @@
-declare type MaplinkConfig = { url: string; enableLogger?: boolean } & OAuthConfig;
+/**
+ * Configuration for the `Maplink` class.
+ */
+declare interface MaplinkConfig extends AuthConfig {
+  /**
+   * The URL of the Maplink API.
+   */
+  url: string;
+  /**
+   * Enables the logger for the `Maplink` class.
+   * @default true - Default value.
+   */
+  enableLogger?: boolean;
+  /**
+   * Initializes the instance by calling it's `init` method at instantiation.
+   * @default true - Default value.
+   */
+  initialize?: boolean;
+}
 
-declare type OAuthConfig = {
-  clientId: string;
-  clientSecret: string;
-  refreshTokenInterval: number;
-};
-
-declare type MaplinkProductList =
+/**
+ * Products available in the Maplink API.
+ */
+declare type MaplinkProducts =
   | "Matrix"
   | "Restriction Zone"
   | "Trip"
@@ -19,19 +34,33 @@ declare type MaplinkProductList =
   | "Emission"
   | "Geocode";
 
-declare type OAuthResponse = {
-  refresh_token_expires_in: string;
-  api_product_list: `${MaplinkProductList[]}`;
-  api_product_list_json: MaplinkProductList[];
-  organization_name: string;
-  "developer.email": string;
-  token_type: string;
-  issued_at: string;
-  client_id: string;
-  access_token: string;
-  application_name: string;
-  scope: string;
-  expires_in: string;
-  refresh_count: string;
-  status: string;
-};
+/**
+ * The default error response from the Maplink API.
+ */
+declare interface MaplinkErrorResponse<T = any> {
+  /**
+   * Title of the error.
+   */
+  title: string;
+  /**
+   * HTTP status code of the error.
+   */
+  status: number;
+  /**
+   * External URL with more information about the error.
+   */
+  type: string;
+  /**
+   * Detailed error data.
+   */
+  details: T[];
+}
+
+/**
+ * `Maplink` context DTO for internal modules.
+ * Should **NOT** be used outside of the `Maplink` class.
+ */
+declare interface MaplinkModuleContext {
+  readonly api: Api;
+  readonly logger: Logger;
+}
