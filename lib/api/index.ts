@@ -136,7 +136,7 @@ export class Api implements Prototype<Api> {
     try {
       const url = new Url(this.#config.baseUrl);
       url.endpoint = path;
-      url.search = new URLSearchParams(params).toString();
+      url.params = params;
       return { kind: "success", value: url.toString() };
     } catch {
       return { kind: "failure", value: new Error("An error occurred while trying to build the URL.") };
