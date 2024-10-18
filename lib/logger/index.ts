@@ -1,3 +1,5 @@
+import { assert } from "node:console";
+
 /**
  * Logger class to handle logging with different levels.
  */
@@ -10,18 +12,9 @@ export class Logger {
    */
   constructor(readonly name?: string) {}
 
-  /**
-   * Enables the logger.
-   */
-  enable() {
-    this.#enabled = true;
-  }
-
-  /**
-   * Disables the logger.
-   */
-  disable() {
-    this.#enabled = false;
+  set enabled(value: boolean) {
+    assert(typeof value === "boolean", "Enabled must be a boolean");
+    this.#enabled = value;
   }
 
   /**

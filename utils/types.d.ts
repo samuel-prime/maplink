@@ -86,3 +86,29 @@ declare type NonEmptyArray<T> = [T, ...T[]];
 declare type NonEmptyObject<T, Keys extends keyof T = keyof T> = {
   [K in Keys]-?: Required<Pick<T, K>> & Partial<Omit<T, K>>;
 }[Keys];
+
+/**
+ * A utility type that filters the keys of an object `T` to only those whose values are assignable to type `U`.
+ *
+ * @template T - The base object type.
+ * @template U - The type to filter the keys by.
+ * @template K - The keys of `T` to consider. Defaults to all keys of `T`.
+ *
+ * @example
+ * ```typescript
+ * interface Example {
+ *   id: string;
+ *   count: number;
+ *   isActive: boolean;
+ * }
+ *
+ * // Only keys with values assignable to `string`
+ * type StringKeys = FilterKeys<Example, string>; // "id"
+ *
+ * // Only keys with values assignable to `number`
+ * type NumberKeys = FilterKeys<Example, number>; // "count"
+ * ```
+ */
+declare type FilterKeys<T, U, K extends keyof T = keyof T> = {
+  [P in K]: T[P] extends U ? P : never;
+}[K];

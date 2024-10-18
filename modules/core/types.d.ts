@@ -57,10 +57,10 @@ declare interface MaplinkErrorResponse<T = any> {
 }
 
 /**
- * `Maplink` context DTO for internal modules.
+ * `Maplink` scope DTO for internal modules.
  * Should **NOT** be used outside of the `Maplink` class.
  */
-declare interface MaplinkModuleContext {
+declare interface MaplinkModuleScope {
   readonly api: Api;
   readonly logger: Logger;
 }
