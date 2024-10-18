@@ -1,37 +1,42 @@
 import type { Api } from "lib/api";
 import type { Logger } from "lib/logger";
+import { assert } from "node:console";
 
 /**
- * The `Auth` class handles the authentication process for the application.
- * It manages the bearer token, including refreshing it at regular intervals
- * and updating the token for all API instances in the update list.
+ * ### Authentication API
  *
- * @class
- * @example
- * const auth = new Auth(context, config);
- * auth.init();
+ * The `Auth` class handles the authentication process for the application.
+ * It manages the bearer token, including refreshing it at regular intervals and updating the token for all API instances in the update list.
+ *
+ * For more information, see the [Maplink API documentation](https://developers.maplink.global/como-gerar-o-token-para-autenticacao/).
+ *
+ * @remarks This class is intended to be used inside the `Maplink` class.
  */
 export class Auth {
   static readonly #ENDPOINT = "/oauth/client_credential/accesstoken";
   static readonly #BASE_INTERVAL = 60 * 1000; // 1 minute
+  static readonly #MAX_ATTEMPTS = 3;
 
-  readonly #credentials: string;
-  readonly #intervalTime: number;
   readonly #api: Api;
+  readonly #updateList: Api[] = [];
+
   readonly #logger: Logger;
   readonly #loggerName = `[${this.constructor.name.toUpperCase()}]`;
-  readonly #updateList: Api[] = [];
+
+  readonly #intervalTime: number;
   #intervalId?: NodeJS.Timeout;
+
+  readonly #credentials: string;
   #token?: string;
   #tokenExpiry?: number;
 
-  constructor(ctx: MaplinkModuleContext, config: AuthConfig) {
+  constructor(scope: MaplinkModuleScope, config: AuthConfig) {
     const { clientId: client_id, clientSecret: client_secret } = config;
 
-    this.#credentials = new URLSearchParams({ client_id, client_secret }).toString();
+    this.#api = scope.api;
+    this.#logger = scope.logger;
     this.#intervalTime = config.refreshTokenInterval * Auth.#BASE_INTERVAL;
-    this.#api = ctx.api;
-    this.#logger = ctx.logger;
+    this.#credentials = new URLSearchParams({ client_id, client_secret }).toString();
 
     this.#api.on("clone", (api) => this.appendApi(api));
   }
@@ -42,9 +47,9 @@ export class Auth {
    * Initializes the authentication module.
    * This method updates the token and starts the refresh routine.
    */
-  init() {
-    this.refreshToken();
+  init(): Promise<void> {
     this.#startTokenAutoRefresh();
+    return this.refreshToken();
   }
 
   /**
@@ -58,8 +63,11 @@ export class Auth {
   /**
    * Refreshes the bearer token.
    * If the token is not expired, it only updates the APIs in the update list.
+   * Retries the token request up to three times if it fails.
    */
-  async refreshToken() {
+  async refreshToken(attempt = 0) {
+    assert(attempt < Auth.#MAX_ATTEMPTS, "The maximum number of attempts to get the token has been reached.");
+
     if (this.#token && this.#tokenExpiry && Date.now() < this.#tokenExpiry) {
       this.#setTokenToApis(this.#token);
       return;
@@ -69,7 +77,17 @@ export class Auth {
 
     if (kind === "failure") {
       this.#logger.error(this.#loggerName, value.message);
+      this.refreshToken(attempt + 1);
       return;
+    }
+
+    if (attempt > 0) {
+      this.#logger.warn(
+        this.#loggerName,
+        "The token was successfully retrieved after a retry. Restarting the token auto refresh process.",
+      );
+
+      this.#startTokenAutoRefresh();
     }
 
     this.#token = value;
