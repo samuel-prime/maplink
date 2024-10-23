@@ -112,3 +112,25 @@ declare type NonEmptyObject<T, Keys extends keyof T = keyof T> = {
 declare type FilterKeys<T, U, K extends keyof T = keyof T> = {
   [P in K]: T[P] extends U ? P : never;
 }[K];
+
+/**
+ * A generic type representing a constructor function for a class of type `T`.
+ *
+ * @template T - The type of the class instance that the constructor creates.
+ */
+declare type Constructor<T> = new (...args: any[]) => T;
+
+/**
+ * Converts a union type `U` to an intersection type.
+ *
+ * This utility type takes a union type `U` and transforms it into an intersection type.
+ * It works by using conditional types and inference to achieve the transformation.
+ *
+ * @template U - The union type to be converted to an intersection type.
+ * @returns The intersection type derived from the union type `U`.
+ */
+declare type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
