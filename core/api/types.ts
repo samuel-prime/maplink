@@ -1,49 +1,50 @@
-type Api = import("./index").Api;
-type Url = import("./url").Url;
+import type { Api } from ".";
+import type { Url } from "./url";
 
-declare namespace Api {
+export namespace _Api {
   /** Api configuration object. */
-  interface Config {
+  export interface Config {
     baseUrl: Url;
-    defaults: ApiDefaults;
+    defaults: Defaults;
   }
 
   /** Api default configuration. It merges with the *request specific* configuration. */
-  interface Defaults {
+  export interface Defaults {
     headers: RequestHeaders;
     params: RequestParams;
   }
 
   /** Api default events. The `key` is the event name and the `value` is the event arguments. */
-  interface Events {
+  export interface Events {
     clone: [Api];
   }
 
   /** Api *request specific* configuration. It will override the Api instance's defaults. */
-  type RequestConfig = Partial<{
+  export type RequestConfig = Partial<{
     headers: RequestHeaders;
     params: RequestParams;
   }>;
 
   /** Gets the Api required resquest arguments based on the http method. */
-  type RequestArgs<T extends HttpMethods> = T extends "GET" | "DELETE"
+  export type RequestArgs<T extends HttpMethods> = T extends "GET" | "DELETE"
     ? [string, RequestConfig?]
     : [string, RequestBody?, RequestConfig?];
 
   // Http Related Types ----------------------------------------------------------------------------
 
-  type HttpMethods = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  export type HttpMethods = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-  type RequestHeaders = {
+  export type RequestHeaders = {
     [x: string]: string;
-    "Content-Type"?: string;
-    Authorization?: string;
-    Accept?: string;
-    "Cache-Control"?: string;
-    "User-Agent"?: string;
-    Origin?: string;
-  };
+  } & Partial<{
+    "Content-Type": string;
+    Authorization: string;
+    Accept: string;
+    "Cache-Control": string;
+    "User-Agent": string;
+    Origin: string;
+  }>;
 
-  type RequestBody = string | number | object | undefined;
-  type RequestParams = Record<string, string>;
+  export type RequestBody = string | number | object | undefined;
+  export type RequestParams = Record<string, string>;
 }

@@ -1,5 +1,8 @@
 import { MaplinkModule } from "core/maplink/module";
+import type { MaplinkApi, Module } from "core/maplink/types";
 import assert from "node:assert";
+import type { Either, Failure, FilterKeys } from "utils/types";
+import type { _Geocode } from "./types";
 
 /**
  * ### Geocode API
@@ -43,7 +46,7 @@ export class Geocode extends MaplinkModule {
    * @remarks The `multiDefault` mode requires to pass an `id` property in each object, which
    * will be used to identify the results.
    */
-  async search<T extends Geocode.ModeInput<"suggestion" | "default" | "multiDefault">>(input: T) {
+  async search<T extends _Geocode.ModeInput<"suggestion" | "default" | "multiDefault">>(input: T) {
     return typeof input === "string"
       ? this.#searchByParams("/suggestions", input)
       : this.#searchByBody(Array.isArray(input) ? "/multi-geocode" : "/geocode", input);
@@ -60,7 +63,7 @@ export class Geocode extends MaplinkModule {
    * The `multiReverse` mode requires to pass an `id` property in each object, which will be used to identify the results.
    * This mode also returns the `extended` version of the `Address` interface.
    */
-  async reverseSearch<T extends Geocode.ModeInput<"reverse" | "multiReverse">>(input: T) {
+  async reverseSearch<T extends _Geocode.ModeInput<"reverse" | "multiReverse">>(input: T) {
     return this.#searchByBody("/reverse", input);
   }
 
@@ -79,8 +82,8 @@ export class Geocode extends MaplinkModule {
   // Private Methods -------------------------------------------------------------------------------
 
   async #searchByBody<
-    T extends Geocode.ModeInput<FilterKeys<Geocode.SearchModes, [object, any]>>,
-    U = Geocode.SelectModeOutput<T>,
+    T extends _Geocode.ModeInput<FilterKeys<_Geocode.SearchModes, [object, any]>>,
+    U = _Geocode.SelectModeOutput<T>,
   >(endpoint: string, input: T): Promise<Either<U, Error>> {
     const { kind, value } = await this.api.post<U, MaplinkApi.DefaultErrorResponse>(
       endpoint,
@@ -90,8 +93,8 @@ export class Geocode extends MaplinkModule {
   }
 
   async #searchByParams<
-    T extends Geocode.ModeInput<FilterKeys<Geocode.SearchModes, [string, any]>>,
-    U = Geocode.SelectModeOutput<T>,
+    T extends _Geocode.ModeInput<FilterKeys<_Geocode.SearchModes, [string, any]>>,
+    U = _Geocode.SelectModeOutput<T>,
   >(endpoint: string, input: T): Promise<Either<U, Error>> {
     const { kind, value } = await this.api.get<U, MaplinkApi.DefaultErrorResponse>(endpoint, {
       params: { q: input },

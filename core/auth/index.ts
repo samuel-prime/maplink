@@ -1,7 +1,10 @@
 import type { Api } from "core/api";
 import { MaplinkModule } from "core/maplink/module";
+import type { Module } from "core/maplink/types";
 import assert from "node:assert";
+import type { Either } from "utils/types";
 import { Token } from "./token";
+import type { _Auth } from "./types";
 
 /**
  * ### Authentication API
@@ -95,7 +98,7 @@ export class Auth extends MaplinkModule {
    * If the limit is reached, stops the token auto refresh and returns an error.
    */
   async #getToken(attempt = 0): Promise<Either<string, Error>> {
-    const response = await this.api.post<Auth.Response>(Auth.#ENDPOINT, this.#credentials, {
+    const response = await this.api.post<_Auth.Response>(Auth.#ENDPOINT, this.#credentials, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       params: { grant_type: "client_credentials" },
     });

@@ -1,6 +1,6 @@
-declare namespace Auth {
+export namespace _Auth {
   /** Response received after a successful authentication attempt. */
-  interface Response {
+  export interface Response {
     refresh_token_expires_in: string;
     api_product_list: string;
     api_product_list_json: string[];

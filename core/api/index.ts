@@ -2,6 +2,8 @@ import assert from "node:assert";
 import EventEmitter from "node:events";
 import { deepClone } from "utils/deep-clone";
 import { deepMerge } from "utils/deep-merge";
+import type { Either, Prototype } from "utils/types";
+import type { _Api } from "./types";
 import { Url } from "./url";
 
 /**
@@ -10,12 +12,12 @@ import { Url } from "./url";
  * Each instance is a `prototype` that can be cloned into new instances with the same configuration.
  */
 export class Api implements Prototype<Api> {
-  static readonly #DEFAULTS: Api.Defaults = { headers: {}, params: {} };
+  static readonly #DEFAULTS: _Api.Defaults = { headers: {}, params: {} };
 
   readonly #eventEmitter: EventEmitter;
-  readonly #config: Api.Config;
+  readonly #config: _Api.Config;
 
-  constructor(baseUrl: string, defaults: Partial<Api.Defaults> = {}, emitter?: EventEmitter) {
+  constructor(baseUrl: string, defaults: Partial<_Api.Defaults> = {}, emitter?: EventEmitter) {
     this.#eventEmitter = emitter ?? new EventEmitter();
 
     // Deep merge the class default configuration with the provided defaults.
@@ -28,23 +30,23 @@ export class Api implements Prototype<Api> {
 
   // Public Methods --------------------------------------------------------------------------------
 
-  async get<T, E = unknown>(...[path, config]: Api.RequestArgs<"GET">) {
+  async get<T, E = unknown>(...[path, config]: _Api.RequestArgs<"GET">) {
     return this.#request<T, E>("GET", path, undefined, config);
   }
 
-  async post<T, E = unknown>(...[path, data, config]: Api.RequestArgs<"POST">) {
+  async post<T, E = unknown>(...[path, data, config]: _Api.RequestArgs<"POST">) {
     return this.#request<T, E>("POST", path, data, config);
   }
 
-  async patch<T, E = unknown>(...[path, data, config]: Api.RequestArgs<"PATCH">) {
+  async patch<T, E = unknown>(...[path, data, config]: _Api.RequestArgs<"PATCH">) {
     return this.#request<T, E>("PATCH", path, data, config);
   }
 
-  async put<T, E = unknown>(...[path, data, config]: Api.RequestArgs<"PUT">) {
+  async put<T, E = unknown>(...[path, data, config]: _Api.RequestArgs<"PUT">) {
     return this.#request<T, E>("PUT", path, data, config);
   }
 
-  async delete<T, E = unknown>(...[path, config]: Api.RequestArgs<"DELETE">) {
+  async delete<T, E = unknown>(...[path, config]: _Api.RequestArgs<"DELETE">) {
     return this.#request<T, E>("DELETE", path, undefined, config);
   }
 
@@ -60,7 +62,7 @@ export class Api implements Prototype<Api> {
     return api;
   }
 
-  on<K extends keyof Api.Events>(event: K, listener: (...args: Api.Events[K]) => void) {
+  on<K extends keyof _Api.Events>(event: K, listener: (...args: _Api.Events[K]) => void) {
     this.#eventEmitter.on(event as string, listener);
   }
 
@@ -84,7 +86,7 @@ export class Api implements Prototype<Api> {
     this.#setToken("Basic", base64Token);
   }
 
-  set header([key, value]: [keyof Api.RequestHeaders, string]) {
+  set header([key, value]: [keyof _Api.RequestHeaders, string]) {
     this.#config.defaults.headers[key] = value;
   }
 
@@ -94,7 +96,7 @@ export class Api implements Prototype<Api> {
 
   // Private Methods -------------------------------------------------------------------------------
 
-  #emit<K extends keyof Api.Events>(event: K, ...args: Api.Events[K]): boolean {
+  #emit<K extends keyof _Api.Events>(event: K, ...args: _Api.Events[K]): boolean {
     return this.#eventEmitter.emit(event as string, ...args);
   }
 
@@ -103,7 +105,7 @@ export class Api implements Prototype<Api> {
     this.#config.defaults.headers.Authorization = `${type} ${token}`;
   }
 
-  #buildUrl(path: string, params: Api.RequestParams = {}): Either<string, Error> {
+  #buildUrl(path: string, params: _Api.RequestParams = {}): Either<string, Error> {
     try {
       const url = new Url(this.#config.baseUrl);
       url.endpoint = path;
@@ -118,7 +120,7 @@ export class Api implements Prototype<Api> {
     }
   }
 
-  #parseBody(body: Api.RequestBody): Either<string, Error> {
+  #parseBody(body: _Api.RequestBody): Either<string, Error> {
     try {
       const data = typeof body === "string" ? body : JSON.stringify(body);
       return { kind: "success", value: data };
@@ -133,9 +135,9 @@ export class Api implements Prototype<Api> {
 
   #parseArgs(
     path: string,
-    body?: Api.RequestBody,
-    config?: Api.RequestConfig,
-  ): Either<[string, string, Api.RequestHeaders], Error> {
+    body?: _Api.RequestBody,
+    config?: _Api.RequestConfig,
+  ): Either<[string, string, _Api.RequestHeaders], Error> {
     // Merge the default headers and params with the provided configuration.
     const headers = Object.assign(this.#config.defaults.headers, config?.headers);
     const params = Object.assign(this.#config.defaults.params, config?.params);
@@ -175,10 +177,10 @@ export class Api implements Prototype<Api> {
   }
 
   async #request<T, E>(
-    method: Api.HttpMethods,
+    method: _Api.HttpMethods,
     path: string,
-    payload?: Api.RequestBody,
-    config?: Api.RequestConfig,
+    payload?: _Api.RequestBody,
+    config?: _Api.RequestConfig,
   ): Promise<Either<T, E | Error>> {
     try {
       const argsResult = this.#parseArgs(path, payload, config);

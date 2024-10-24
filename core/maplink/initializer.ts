@@ -1,4 +1,5 @@
 import type { MaplinkSDK } from ".";
+import type { Module, SDK } from "./types";
 
 /**
  * Class responsible for ensuring that the SDK's required modules are initialized

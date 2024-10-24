@@ -1,17 +1,19 @@
-declare namespace Geocode {
+import type { NonEmptyArray, NonEmptyObject } from "utils/types";
+
+export namespace _Geocode {
   // Geocode Generic Types -------------------------------------------------------------------------
 
   /**
    * The type of the geocode search.
    * Represents the approach used to find the address(es).
    */
-  type SearchApproaches = "ZIPCODE" | "STATE" | "CITY" | "DISTRICT";
+  export type SearchApproaches = "ZIPCODE" | "STATE" | "CITY" | "DISTRICT";
 
   /**
    * The search modes available for the geocode module.
    * Each mode has an associated search method and response type.
    */
-  interface SearchModes {
+  export interface SearchModes {
     default: [SearchAddress, Address];
     multiDefault: [NonEmptyArray<{ id: string } & SearchAddress>, Address];
     suggestion: [string, Address];
@@ -22,22 +24,22 @@ declare namespace Geocode {
   /**
    * The available search modes for the geocode module.
    */
-  type Modes = keyof SearchModes;
+  export type Modes = keyof SearchModes;
 
   /**
    * The input type for each search mode.
    */
-  type ModeInput<K extends Modes = Modes> = SearchModes[K][0];
+  export type ModeInput<K extends Modes = Modes> = SearchModes[K][0];
 
   /**
    * The output type for each search mode.
    */
-  type ModeOutput<K extends Modes = Modes> = Response<SearchModes[K][1]>;
+  export type ModeOutput<K extends Modes = Modes> = Response<SearchModes[K][1]>;
 
   /**
    * Selects the output type based on the input type.
    */
-  type SelectModeOutput<T extends ModeInput> = T extends ModeInput<"default">
+  export type SelectModeOutput<T extends ModeInput> = T extends ModeInput<"default">
     ? ModeOutput<"default">
     : T extends ModeInput<"multiDefault">
       ? ModeOutput<"multiDefault">
@@ -54,7 +56,7 @@ declare namespace Geocode {
   /**
    * The coordinates in a geocode address.
    */
-  interface Coordinates {
+  export interface Coordinates {
     readonly lat: number;
     readonly lon: number;
   }
@@ -62,7 +64,7 @@ declare namespace Geocode {
   /**
    * The state information in a geocode address.
    */
-  interface AddressState {
+  export interface AddressState {
     readonly code: string;
     readonly name: string;
   }
@@ -70,7 +72,7 @@ declare namespace Geocode {
   /**
    * Represents the default geocode address.
    */
-  interface Address {
+  export interface Address {
     readonly road: string;
     readonly district: string;
     readonly zipCode: string;
@@ -83,7 +85,7 @@ declare namespace Geocode {
    * Extends Address to include additional properties.
    * This is used on **multi reverse mode** searches.
    */
-  interface ExtendedAddress extends Address {
+  export interface ExtendedAddress extends Address {
     /**
      * The geometry coordinates.
      * It represents the approximate area of the address.
@@ -102,7 +104,7 @@ declare namespace Geocode {
   /**
    * Represents a single result in a geocode response.
    */
-  interface Result<T extends Address | ExtendedAddress> {
+  export interface Result<T extends Address | ExtendedAddress> {
     /**
      * The unique identifier for the result.
      * It can be set in the request, otherwise it will be generated as an UUID.
@@ -136,7 +138,7 @@ declare namespace Geocode {
   /**
    * The response from a geocode search.
    */
-  interface Response<T extends Address | ExtendedAddress> {
+  export interface Response<T extends Address | ExtendedAddress> {
     readonly found: number;
     readonly results: ReadonlyArray<Result<T>>;
   }
@@ -147,7 +149,7 @@ declare namespace Geocode {
    * The required parameters for a search address.
    * Requires at least one of the properties to be set.
    */
-  type RequiredSearchAddressParams = NonEmptyObject<{
+  export type RequiredSearchAddressParams = NonEmptyObject<{
     road: string;
     /**
      * The street number.
@@ -172,7 +174,7 @@ declare namespace Geocode {
   /**
    * The optional parameters for a search address.
    */
-  interface OptionalSearchAddressParams {
+  export interface OptionalSearchAddressParams {
     /**
      * Limits the type of search.
      * Only for addresses in Brazil and if the **globalSearch** parameter is not provided.
@@ -183,5 +185,5 @@ declare namespace Geocode {
   /**
    * The combined required and optional parameters for a search address.
    */
-  type SearchAddress = RequiredSearchAddressParams & OptionalSearchAddressParams;
+  export type SearchAddress = RequiredSearchAddressParams & OptionalSearchAddressParams;
 }

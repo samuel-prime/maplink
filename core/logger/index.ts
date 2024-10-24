@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import type { Failure, Prototype } from "utils/types";
 
 /**
  * Simple logger class to log messages at different levels.

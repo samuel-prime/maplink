@@ -2,8 +2,10 @@ import { Api } from "core/api";
 import { Auth } from "core/auth";
 import { Logger } from "core/logger";
 import assert from "node:assert";
+import type { Constructor } from "utils/types";
 import { MaplinkInitializer } from "./initializer";
 import { MaplinkModule } from "./module";
+import type { Module, SDK } from "./types";
 
 /**
  * ### MaplinkSDK

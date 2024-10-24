@@ -1,6 +1,7 @@
 import type { Api } from "core/api";
 import type { Logger } from "core/logger";
 import assert from "node:assert";
+import type { Module } from "./types";
 
 /**
  * Abstract base class for a Maplink module.
