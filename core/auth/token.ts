@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { EventEmitter } from "node:stream";
+import { EventEmitter } from "node:events";
 
 /**
  * Token class to manage the Maplink's `access_token` lifecycle.

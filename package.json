@@ -10,7 +10,10 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": { "require": "./dist/index.d.ts", "import": "./dist/index.d.mts" },
+      "types": {
+        "require": "./dist/index.d.ts",
+        "import": "./dist/index.d.mts"
+      },
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"
     }

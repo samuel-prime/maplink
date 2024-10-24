@@ -12,6 +12,11 @@
     "skipLibCheck": true,
     "moduleResolution": "node16",
 
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "paths": {
+      "core/*": ["core/*"],
+      "modules/*": ["modules/*"],
+      "utils/*": ["utils/*"]
+    }
   }
 }
