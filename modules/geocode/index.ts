@@ -75,7 +75,7 @@ export class Geocode extends MaplinkModule {
    */
   set globalSearch(value: boolean) {
     assert(typeof value === "boolean", "The global search must be a boolean.");
-    this.api.param = ["globalSearch", value];
+    this.api.params = ["globalSearch", value];
     this.logger.info(`Global search is ${value ? "enabled" : "disabled"}.`);
   }
 
