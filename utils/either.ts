@@ -13,10 +13,7 @@ export class Failure<T, U = unknown> implements FailureType<T> {
 
   constructor(value: T, previous?: U | FailureType<U>) {
     this.value = value;
-    if (previous) {
-      this.previous =
-        previous instanceof Failure ? (previous as Failure<U>) : new Failure(previous as U);
-    }
+    if (previous) this.previous = previous instanceof Failure ? (previous as Failure<U>) : new Failure(previous as U);
   }
 }
 

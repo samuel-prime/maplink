@@ -129,8 +129,4 @@ export type Constructor<T> = new (...args: any[]) => T;
  * @template U - The union type to be converted to an intersection type.
  * @returns The intersection type derived from the union type `U`.
  */
-export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I,
-) => void
-  ? I
-  : never;
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;

@@ -9,6 +9,6 @@
  * @param {T} value - The object to be deep cloned.
  * @returns {T} A deep clone of the input object.
  */
-export function deepClone<T extends object>(value: T) {
+export function deepClone<T extends object>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
