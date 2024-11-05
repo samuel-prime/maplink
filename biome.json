@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.7.0/schema.json",
   "organizeImports": { "enabled": true },
-  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
   "linter": {
     "enabled": true,
     "rules": {
@@ -12,6 +12,8 @@
         "noStaticOnlyClass": "off",
         "noForEach": "off"
       },
+      "correctness": { "noConstructorReturn": "off" },
+      "style": { "useShorthandFunctionType": "off" },
       "performance": { "noDelete": "off" }
     }
   }
