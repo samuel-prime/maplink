@@ -1,120 +1,95 @@
 import assert from "node:assert";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { randomUUID } from "node:crypto";
 import EventEmitter from "node:events";
 import { deepClone } from "utils/deep-clone";
-import { deepMerge } from "utils/deep-merge";
-import type { Either, Prototype } from "utils/types";
+import type { Prototype } from "utils/types";
+import { ApiAsyncContext } from "./async-context";
+import { ApiConfig, type ApiDefaults } from "./config";
 import { ApiFetch } from "./fetch";
-import type { _Api, _Http } from "./types";
-import { Url } from "./url";
+import { ApiHook, ApiHookManager } from "./hook";
+import type { _Api } from "./types";
+import type { Url } from "./url";
 
-/**
- * ### API
- * > A wrapper class around the `fetch` function that simplifies making HTTP requests.
- *
- * It allows setting default `request configurations`, adding request/response `hooks`, and listening to `events`.
- * Additionally, it provides methods to make `GET`, `POST`, `PATCH`, `PUT`, and `DELETE` requests.
- *
- * It uses `AsyncLocalStorage` to provide context to each API fetch operation.
- *
- * Each instance is a `prototype` that can be cloned into new instances with the same configuration and,
- * more importantly, the same `event emitter`, ensuring all clones share the same listeners.
- */
 export class Api implements Prototype<Api> {
   static readonly #CONTEXT = new AsyncLocalStorage<_Api.AsyncContext>();
 
-  readonly #config: _Api.Config;
+  readonly #hookManager: ApiHookManager;
   readonly #eventEmitter: EventEmitter;
-  readonly #requestHooks: _Api.RequestHook[] = [];
-  readonly #responseHooks: _Api.ResponseHook[] = [];
+  readonly #config: ApiConfig;
 
-  constructor(baseUrl: string, defaults: Partial<_Api.Defaults> = {}, eventEmitter?: EventEmitter) {
-    this.#config = {
-      defaults: deepMerge({ headers: {}, params: {} }, defaults),
-      baseUrl: new Url(baseUrl),
-    };
-
+  constructor(pathname: string, hookManager?: ApiHookManager, eventEmitter?: EventEmitter) {
+    this.#hookManager = hookManager ?? new ApiHookManager();
     this.#eventEmitter = eventEmitter ?? new EventEmitter();
+    this.#config = new ApiConfig(pathname);
   }
 
-  /**
-   * Retrieves the current API context. **Throws an error if the context is not available.**
-   */
   static getContext() {
     const context = Api.#CONTEXT.getStore();
     assert(context, "The API context is not available. Set a context before making an API fetch.");
     return context;
   }
 
-  // #region HTTP Methods
-  async get<T, E = unknown>(...[path, config]: _Api.GetRequestArgs<"GET">) {
-    return this.#fetch<T, E>("GET", path, undefined, config);
+  async get<T, E = unknown>(path: string, config?: _Api.Fetch.Config) {
+    return this.#fetch<"GET", T, E>("GET", path, config);
   }
 
-  async post<T, E = unknown>(...[path, data, config]: _Api.GetRequestArgs<"POST">) {
-    return this.#fetch<T, E>("POST", path, data, config);
+  async post<T, E = unknown>(path: string, body?: _Api.Request.Body, config?: _Api.Fetch.Config) {
+    return this.#fetch<"POST", T, E>("POST", path, body, config);
   }
 
-  async patch<T, E = unknown>(...[path, data, config]: _Api.GetRequestArgs<"PATCH">) {
-    return this.#fetch<T, E>("PATCH", path, data, config);
+  async patch<T, E = unknown>(path: string, body?: _Api.Request.Body, config?: _Api.Fetch.Config) {
+    return this.#fetch<"PATCH", T, E>("PATCH", path, body, config);
   }
 
-  async put<T, E = unknown>(...[path, data, config]: _Api.GetRequestArgs<"PUT">) {
-    return this.#fetch<T, E>("PUT", path, data, config);
+  async put<T, E = unknown>(path: string, body?: _Api.Request.Body, config?: _Api.Fetch.Config) {
+    return this.#fetch<"PUT", T, E>("PUT", path, body, config);
   }
 
-  async delete<T, E = unknown>(...[path, config]: _Api.GetRequestArgs<"DELETE">) {
-    return this.#fetch<T, E>("DELETE", path, undefined, config);
-  }
-  // #endregion HTTP Methods end
-
-  /**
-   * Adds a request or response hook to the appropriate list.
-   *
-   * These hooks are executed before making the request and after receiving the response, respectively.
-   * They can be used to modify the request/response data or to perform additional actions.
-   */
-  appendHook<T extends keyof _Api.Hooks>(type: T, hook: _Api.Hooks[T]) {
-    type === "beforeRequest"
-      ? this.#requestHooks.push(hook as _Api.RequestHook)
-      : this.#responseHooks.push(hook as _Api.ResponseHook);
+  async delete<T, E = unknown>(path: string, config?: _Api.Fetch.Config) {
+    return this.#fetch<"DELETE", T, E>("DELETE", path, config);
   }
 
-  // #region Event Emitter
-  on<K extends keyof _Api.Events>(event: K, listener: (...args: _Api.Events[K]) => void) {
+  on<K extends _Api.Events.Names>(event: K, listener: _Api.Events.Listener<K>) {
     this.#eventEmitter.on(event, listener);
   }
 
-  #emit<K extends keyof _Api.Events>(event: K, ...args: _Api.Events[K]): boolean {
+  #emit<K extends _Api.Events.Names>(event: K, ...args: _Api.Events.List[K]): boolean {
     return this.#eventEmitter.emit(event, ...args);
   }
-  // #endregion Event Emitter end
 
-  // #region Config
+  beforeFetch(hook: _Api.Hooks.Function) {
+    return this.#handleHookCreation(new ApiHook("beforeFetch", hook, this));
+  }
+
+  afterFetch(hook: _Api.Hooks.Function) {
+    return this.#handleHookCreation(new ApiHook("afterFetch", hook, this));
+  }
+
+  #handleHookCreation(hook: ApiHook) {
+    this.#hookManager.append(hook);
+    this.#emit("hookAppend", hook);
+
+    return Object.freeze({
+      global: () => this.#hookManager.changeToGlobal(hook),
+      once: function () {
+        hook.once();
+        return Object.freeze({ global: this.global });
+      },
+    });
+  }
+
   get baseUrl(): Url {
     return this.#config.baseUrl;
   }
 
-  set headers([key, value]: [keyof _Http.Headers, string]) {
-    this.#config.defaults.headers[key] = value;
+  get defaults(): ApiDefaults {
+    return this.#config.defaults;
   }
 
-  set params([key, value]: [string, string | number | boolean]) {
-    this.#config.defaults.params[key] = String(value);
-  }
-
-  /**
-   * Sets a token for the `Authorization` header in the `Bearer` format.
-   */
   set bearerToken(token: string) {
     this.#setToken("Bearer", token);
   }
 
-  /**
-   * Sets a token for the `Authorization` header in the `Basic` format.
-   * It encodes the token in `base64` before setting it.
-   */
   set basicToken(token: string) {
     const base64Token = Buffer.from(token).toString("base64");
     this.#setToken("Basic", base64Token);
@@ -122,41 +97,65 @@ export class Api implements Prototype<Api> {
 
   #setToken(type: string, token: string) {
     assert(typeof token === "string" && token, "The token must be a non-empty string.");
-    this.#config.defaults.headers.Authorization = `${type} ${token}`;
+    this.#config.defaults.headers ??= {};
+    this.#config.defaults.headers.authorization = `${type} ${token}`;
   }
-  // #endregion Config end
 
-  // #region Fetch
-  /**
-   * Performs an HTTP request using the `ApiFetch` class and returns the response data.
-   */
-  async #fetch<T, E>(
-    method: _Http.Methods,
-    endpoint: string,
-    body: _Api.RequestBody,
-    specificConfig: _Api.RequestConfig = {},
-  ): Promise<Either<T, E | Error>> {
-    const config = deepMerge(deepClone(this.#config.defaults), specificConfig);
-    const url = this.baseUrl.clone(endpoint);
+  async #fetch<K extends _Api.Http.Methods, T, E>(...args: _Api.Fetch.GetArgs<K>) {
+    const { config } = this.#resolveFetchArgs(args);
 
-    const id = config.id ?? randomUUID();
-    const emitEvent = this.#emit.bind(this);
-    const requestHooks = [...this.#requestHooks, ...(config.beforeRequest ?? [])];
-    const responseHooks = [...this.#responseHooks, ...(config.afterResponse ?? [])];
-
-    return Api.#CONTEXT.run({ id, emitEvent, requestHooks, responseHooks }, async () => {
-      const fetch = new ApiFetch<T, E>(method, url, body, config);
-      return (await fetch.response).data();
+    return Api.#CONTEXT.run(this.#createAsyncContext(args), async () => {
+      const fetch = new ApiFetch<T, E>(config?.name);
+      return (await fetch.response).data;
     });
   }
-  // #endregion Fetch end
 
-  /**
-   * Creates a new instance of the Api class with the same configuration and `event emitter`.
-   * Emits a `clone` event with the new instance as an argument.
-   */
+  #createAsyncContext<K extends _Api.Http.Methods>(args: _Api.Fetch.GetArgs<K>) {
+    const { config } = this.#resolveFetchArgs(args);
+
+    const requestConfig = this.#getContextRequestConfig(args);
+    const hooks = this.#getContextHooks(config?.hooks);
+    const emitter = this.#emit.bind(this);
+
+    return new ApiAsyncContext(requestConfig, emitter, hooks);
+  }
+
+  #getContextHooks(hooks?: _Api.Fetch.Config["hooks"]): _Api.AsyncContext["hooks"] {
+    const beforeFetchHooks = hooks?.beforeFetch?.map((hook) => new ApiHook("beforeFetch", hook)) ?? [];
+    const afterFetchHooks = hooks?.afterFetch?.map((hook) => new ApiHook("afterFetch", hook)) ?? [];
+
+    const beforeFetch = [...this.#hookManager.beforeFetch(this), ...beforeFetchHooks];
+    const afterFetch = [...this.#hookManager.afterFetch(this), ...afterFetchHooks];
+
+    return Object.freeze({ beforeFetch, afterFetch });
+  }
+
+  #getContextRequestConfig<K extends _Api.Http.Methods>(args: _Api.Fetch.GetArgs<K>): _Api.Request.Config {
+    const { method, endpoint, body, config } = this.#resolveFetchArgs(args);
+
+    const url = this.baseUrl.clone();
+    url.endpoint = endpoint;
+
+    const { headers, params, callback } = this.defaults.merge({ ...config, headers: config?.headers ?? {} });
+    return Object.freeze({ method, url, body, headers, params, callback });
+  }
+
+  #resolveFetchArgs<T extends _Api.Http.Methods>(args: _Api.Fetch.GetArgs<T>) {
+    const [method, endpoint, args2, args3] = args;
+
+    const hasBody = ["POST", "PATCH", "PUT"].includes(method);
+    const [config, body] = (hasBody ? [args3, args2] : [args2]) as [_Api.Fetch.Config?, _Api.Request.Body?];
+
+    return Object.freeze({ method, endpoint, body, config });
+  }
+
   clone(): Api {
-    const api = new Api(this.#config.baseUrl.href, deepClone(this.#config.defaults));
+    const api = new Api(this.baseUrl.href, this.#hookManager, this.#eventEmitter);
+
+    api.defaults.headers = this.defaults.headers ? deepClone(this.defaults.headers) : undefined;
+    api.defaults.params = this.defaults.params ? deepClone(this.defaults.params) : undefined;
+    api.defaults.callback = this.defaults.callback;
+
     this.#eventEmitter.emit("clone", api);
     return api;
   }

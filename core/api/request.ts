@@ -1,65 +1,83 @@
 import assert from "node:assert";
 import { deepClone } from "utils/deep-clone";
+import { isObject } from "utils/isObject";
 import type { Prototype } from "utils/types";
 import { Api } from ".";
-import type { _Api, _Http } from "./types";
-import type { Url } from "./url";
+import type { _Api } from "./types";
+import { Url } from "./url";
 
-/**
- * Represents an API request object.
- */
-export class ApiRequest implements Prototype<ApiRequest> {
+export class ApiRequest implements Prototype<ApiRequest>, _Api.Request.Config {
   readonly fetchId: string;
-  readonly method: _Http.Methods;
-  readonly url: Url;
-  readonly body: _Api.RequestBody;
-  readonly headers: _Http.Headers;
-  readonly #params: _Api.RequestParams;
+  readonly method: _Api.Request.Config["method"];
+  readonly url: _Api.Request.Config["url"];
+  #params: _Api.Request.Config["params"];
+  #body: _Api.Request.Config["body"];
+  #callback: _Api.Request.Config["callback"];
+  readonly headers: _Api.Request.Config["headers"];
 
-  constructor(method: _Http.Methods, url: Url, body: _Api.RequestBody, config: _Api.RequestConfig) {
-    const VALID_METHODS: _Http.Methods[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
-    assert(VALID_METHODS.includes(method), `Invalid method: ${method}`);
+  constructor(config?: _Api.Request.Config & { fetchId: string }) {
+    const requestConfig = config ?? this.#getFromAsyncContext();
 
-    this.fetchId = Api.getContext().id;
+    const { fetchId, method, url, params, body, callback, headers } = deepClone(requestConfig);
+    assert(["GET", "POST", "PUT", "PATCH", "DELETE"].includes(method), `Invalid HTTP method: ${method}.`);
+
+    this.fetchId = fetchId;
     this.method = method;
+    this.url = new Url(url);
+    this.params = params;
     this.body = body;
-    this.headers = config.headers ?? {};
-    this.#params = config.params ?? {};
-    this.url = url.clone(undefined, this.#params);
+    this.callback = callback;
+    this.headers = headers;
   }
 
-  /**
-   * Returns a copy of the request parameters.
-   */
-  get params(): _Api.RequestParams {
-    return { ...this.#params };
+  #getFromAsyncContext() {
+    const { fetchId, requestConfig } = Api.getContext();
+    return { fetchId, ...requestConfig };
   }
 
-  /**
-   * Sets a new request parameter and updates the URL accordingly.
-   */
-  set params([key, value]: [string, string | number | boolean]) {
-    this.#params[key] = String(value);
-    this.url.parameters = this.#params;
+  get params(): _Api.Request.Config["params"] {
+    return this.#params;
   }
 
-  /**
-   * Converts the request body to a JSON string if it's an object.
-   * Throws an error if the body is not a valid `_Api.RequestBody` type.
-   */
-  get payload() {
+  set params(params: _Api.Request.Config["params"]) {
+    assert(isObject(params) || params === undefined, "Invalid params type.");
+    this.#params = params;
+    this.url.params = this.#params;
+  }
+
+  get body(): _Api.Request.Config["body"] {
+    return this.#body;
+  }
+
+  set body(body: _Api.Request.Config["body"]) {
+    assert(isObject(body) || ["string", "number", "undefined"].includes(typeof body), "Invalid body type.");
+    this.#body = body;
+    this.#setCallbacktoBody();
+  }
+
+  get callback(): _Api.Request.Config["callback"] {
+    return this.#callback;
+  }
+
+  set callback(callback: _Api.Request.Config["callback"]) {
+    assert(isObject(callback) || callback === undefined, "Invalid callback type.");
+    this.#callback = callback;
+    this.#setCallbacktoBody();
+  }
+
+  #setCallbacktoBody() {
+    if (isObject(this.body)) (this.body as any).callback = this.#callback;
+  }
+
+  get payload(): string {
     return typeof this.body === "string" ? this.body : JSON.stringify(this.body);
   }
 
-  /**
-   * Creates a deep clone of the current instance, ensuring that object properties are deeply cloned to avoid reference issues.
-   */
   clone(): ApiRequest {
-    return new ApiRequest(
-      this.method,
-      this.url,
-      this.body instanceof Object ? deepClone(this.body) : this.body,
-      deepClone({ headers: this.headers, params: this.params }),
-    );
+    const request = new ApiRequest(deepClone(this));
+    request.callback = this.callback;
+    request.params = this.params;
+    request.body = this.body;
+    return request;
   }
 }

@@ -1,66 +1,87 @@
+import assert from "node:assert";
 import { Failure, Success } from "utils/either";
 import type { Either, Prototype } from "utils/types";
 import { Api } from ".";
-import type { _Http } from "./types";
+import { ApiRequest } from "./request";
+import type { _Api } from "./types";
 
-/**
- * Represents an API response object.
- * It can return either a `Success` or `Failure`, with type `T` or `E` respectively, based on the response status.
- */
-export class ApiResponse<T, E> implements Prototype<ApiResponse<T, E>> {
+export class ApiResponse<T = unknown, E = unknown> implements Prototype<ApiResponse<T, E>> {
   readonly fetchId: string;
+  readonly #response: Response;
+  #request?: ApiRequest;
   readonly ok: boolean;
   readonly status: number;
-  readonly headers: _Http.Headers = {};
-  readonly #originalResponse: Response;
-  #data?: Either<T, E | Error>;
+  readonly headers: _Api.Http.Headers = {};
+  readonly data: Promise<Either<T, E | Error>>;
 
   constructor(response: Response) {
-    this.fetchId = Api.getContext().id;
+    this.fetchId = Api.getContext().fetchId;
+    this.#response = response;
     this.ok = response.ok;
     this.status = response.status;
-    this.#originalResponse = response;
-
     response.headers.forEach((value, key) => (this.headers[key] = value));
+    this.data = this.#parseData();
   }
 
-  /**
-   * Creates a new `ApiResponse` instance from a `fetch` promise.
-   */
-  static async fromFetch<T, E>(promise: Promise<Response>) {
+  static async fromFetch<T, E>(promise: Promise<Response>): Promise<ApiResponse<T, E>> {
     const response = await promise;
     return new ApiResponse<T, E>(response);
   }
 
-  /**
-   * Parses the response body and returns either a `Success` or `Failure` instance based on the response status.
-   * **Currently, it only supports the `application/json` content-type.**
-   */
-  async data(): Promise<Either<T, E | Error>> {
-    if (this.#data) return this.#data;
-
-    const contentType = this.headers["content-type"];
-    const error = new Error(contentType ? "Unsupported content-type." : "No content-type header.");
-
-    let data: Either<T, E | Error> = new Failure(error);
-    if (!contentType) return data;
-
-    if (contentType.includes("application/json")) {
-      try {
-        const jsonObject = await this.#originalResponse.json();
-        data = this.ok ? new Success(jsonObject as T) : new Failure(jsonObject as E);
-      } catch (error) {
-        data = new Failure(new Error("Failed to parse the response: Invalid JSON format."));
-      }
-    }
-
-    return data;
+  get request(): ApiRequest | undefined {
+    return this.#request;
   }
 
-  /**
-   * Creates a deep clone of the current instance, ensuring that object properties are deeply cloned to avoid reference issues.
-   */
+  set request(request: ApiRequest) {
+    assert(request instanceof ApiRequest, "Invalid request object.");
+    this.#request = request;
+  }
+
+  async #parseData(): Promise<Either<T, E | Error>> {
+    const contentType = this.#getContentType();
+    if (!contentType) return new Failure(new Error("No content-type header."));
+
+    if (contentType.includes("application/json")) return new JSONParser<T, E>(this.#response).parse();
+    if (contentType.includes("text/")) return new TextParser<T, E>(this.#response).parse();
+
+    return new Failure(new Error("Unsupported content-type."));
+  }
+
+  #getContentType() {
+    for (const key in this.headers) {
+      if (key.toLowerCase().includes("content-type")) return this.headers[key];
+    }
+  }
+
   clone(): ApiResponse<T, E> {
-    return new ApiResponse(this.#originalResponse);
+    const response = new ApiResponse<T, E>(this.#response);
+    if (this.#request) response.request = this.#request.clone();
+    return response;
+  }
+}
+
+class JSONParser<T = unknown, E = unknown> implements _Api.Response.Parser<T, E> {
+  constructor(readonly response: Response) {}
+
+  async parse(): Promise<Either<T, E | Error>> {
+    try {
+      const data = await this.response.json();
+      return this.response.ok ? new Success(data as T) : new Failure(data as E);
+    } catch (error) {
+      return new Failure(new Error("Failed to parse the response to object."));
+    }
+  }
+}
+
+class TextParser<T = unknown, E = unknown> implements _Api.Response.Parser<T, E> {
+  constructor(readonly response: Response) {}
+
+  async parse(): Promise<Either<T, E | Error>> {
+    try {
+      const data = await this.response.text();
+      return this.response.ok ? new Success(data as T) : new Failure(data as E);
+    } catch (error) {
+      return new Failure(new Error("Failed to parse the response to text."));
+    }
   }
 }

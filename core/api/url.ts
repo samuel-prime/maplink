@@ -1,54 +1,29 @@
-import { assert } from "node:console";
+import assert from "node:assert";
 import { join } from "node:path";
+import { isEmpty } from "utils/isEmpty";
+import { isObject } from "utils/isObject";
 import type { Prototype } from "utils/types";
+import type { _Api } from "./types";
 
-/**
- * Extends the native `URL` class to provide additional functionality.
- */
 export class Url extends URL implements Prototype<Url> {
-  /**
-   * Sets the endpoint of the URL by joining the current pathname with the provided path.
-   * **Throws an error if the provided endpoint is not a string.**
-   */
   set endpoint(endpoint: string) {
-    assert(typeof endpoint === "string", "Endpoint must be a string.");
+    assert(typeof endpoint === "string", "The endpoint must be a string.");
     this.pathname = join(this.pathname, endpoint);
   }
 
-  /**
-   * Sets the query search of the URL by converting the provided object into a query string.
-   *
-   * If no parameters are provided, the search will be set to an empty string.
-   * Otherwise, it will be set to the provided parameter values that are either `strings`, `numbers`, or `booleans`.
-   *
-   * **Throws an error if the provided parameters are not an object.**
-   */
-  set parameters(params: Record<string, string | number | boolean>) {
-    if (!params) {
-      this.search = "";
-      return;
+  set params(params: _Api.Request.Params | undefined | null) {
+    assert(isObject(params) || params == null, "The params must be an object, undefined or null.");
+
+    this.search = "";
+    if (!params || isEmpty(params)) return;
+
+    for (const [key, value] of Object.entries(params)) {
+      if (!["string", "number", "boolean"].includes(typeof value)) continue;
+      this.searchParams.append(key, String(value));
     }
-
-    assert(typeof params === "object" && !Array.isArray(params), "Params must be an object.");
-
-    const VALID_TYPES = ["string", "number", "boolean"];
-    const searchParams: [string, string][] = [];
-
-    for (const key in params) {
-      const value = params[key];
-      if (VALID_TYPES.includes(typeof value)) searchParams.push([key, String(value)]);
-    }
-
-    this.search = new URLSearchParams(searchParams).toString();
   }
 
-  /**
-   * Clones the current instance, optionally updating the endpoint and parameters.
-   */
-  clone(endpoint?: string, params?: Record<string, string | number | boolean>) {
-    const url = new Url(this.href);
-    if (endpoint) url.endpoint = endpoint;
-    if (params) url.parameters = params;
-    return url;
+  clone(): Url {
+    return new Url(this);
   }
 }
