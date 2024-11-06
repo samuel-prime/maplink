@@ -1,6 +1,5 @@
 export namespace _Auth {
-  /** Response received after a successful authentication attempt. */
-  export interface Response {
+  export interface Success {
     refresh_token_expires_in: string;
     api_product_list: string;
     api_product_list_json: string[];
@@ -15,5 +14,10 @@ export namespace _Auth {
     expires_in: string;
     refresh_count: string;
     status: string;
+  }
+
+  export interface Failure {
+    ErrorCode: string;
+    Error: string;
   }
 }

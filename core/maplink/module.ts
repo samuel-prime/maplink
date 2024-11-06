@@ -1,27 +1,30 @@
 import type { Api } from "core/api";
 import type { Logger } from "core/logger";
 import assert from "node:assert";
-import type { Module } from "./types";
+import type { ModulePrivilegedScope, ModuleScope } from "./scope";
+import type { _SDK } from "./types";
 
-/**
- * Abstract base class for a Maplink module.
- *
- * This class provides the foundational structure for creating a module within the Maplink system.
- * It ensures that each module has access to the necessary `api` and `logging` mechanisms.
- *
- * @abstract
- */
-export abstract class MaplinkModule {
-  protected readonly api: Api;
-  protected readonly logger: Logger;
-  readonly metadata: Module.Metadata;
+export abstract class MaplinkModule<T extends ModuleScope | ModulePrivilegedScope = ModuleScope> {
+  readonly metadata: _SDK.Module.Metadata;
+  readonly #scope: T;
 
-  constructor(scope: Module.Scope, metadata: Module.Metadata) {
-    assert(scope, "Module scope is required.");
-    this.api = scope.api;
-    this.logger = scope.logger;
+  constructor(scope: T, metadata: _SDK.Module.Metadata) {
+    assert(metadata, "The module metadata is required.");
+    assert(scope, "The module scope is required.");
 
-    assert(metadata, "Module metadata is required.");
     this.metadata = metadata;
+    this.#scope = scope;
+  }
+
+  protected get api(): Api {
+    return this.#scope.api;
+  }
+
+  protected get logger(): Logger {
+    return this.#scope.logger;
+  }
+
+  protected get config() {
+    return (this.#scope as ModulePrivilegedScope).config as T extends ModulePrivilegedScope ? _SDK.Config<any> : never;
   }
 }

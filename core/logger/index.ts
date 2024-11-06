@@ -1,12 +1,6 @@
 import assert from "node:assert";
 import type { Failure, Prototype } from "utils/types";
 
-/**
- * Simple logger class to log messages at different levels.
- *
- * Each instance created via the `clone` method will have the same status reference as it's parent,
- * which means that if the parent is `disabled`, the child will also be `disabled`.
- */
 export class Logger implements Prototype<Logger> {
   #status = { enabled: true };
   prefix?: string;
@@ -41,10 +35,6 @@ export class Logger implements Prototype<Logger> {
     this.error(JSON.stringify(result));
   }
 
-  /**
-   * Clones the current logger instance, passing the same status reference to the new one.
-   * This will make all clones from this instance onwards to share the same status reference.
-   */
   clone(): Logger {
     return new Logger(this.prefix, this.#status);
   }

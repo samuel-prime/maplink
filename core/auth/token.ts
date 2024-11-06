@@ -1,10 +1,6 @@
 import assert from "node:assert";
 import { EventEmitter } from "node:events";
 
-/**
- * Token class to manage the Maplink's `access_token` lifecycle.
- * It emits an `update` event whenever the token is updated.
- */
 export class Token {
   readonly #eventEmitter = new EventEmitter();
   readonly #intervalTime: number;
@@ -19,7 +15,6 @@ export class Token {
     return this.#value;
   }
 
-  /** Updates the token value and expiry time, emitting an `update` event afterwards. */
   set value(value: string) {
     assert(typeof value === "string" && value, "Token value must be a non-empty string.");
     this.#value = value;

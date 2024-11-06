@@ -2,82 +2,94 @@ import { Api } from "core/api";
 import { Auth } from "core/auth";
 import { Logger } from "core/logger";
 import assert from "node:assert";
-import type { Constructor } from "utils/types";
-import { MaplinkInitializer } from "./initializer";
 import { MaplinkModule } from "./module";
-import type { Module, SDK } from "./types";
+import { ModulePrivilegedScope, ModuleScope } from "./scope";
+import type { _SDK } from "./types";
 
-/**
- * ### MaplinkSDK
- *
- * The Maplink Platform is a set of APIs for managing the movement of people and goods,
- * optimizing distance, time, and resources, considering multiple constraints and business rules.
- *
- * This class serves as a SDK for the Maplink APIs, providing a set of modules that encapsulate
- * the functionalities of each API.
- *
- * For more information about the Maplink APIs, see the [official documentation](https://developers.maplink.global/).
- */
-export class MaplinkSDK<T extends SDK.ModulesList> {
-  readonly #config: SDK.Config<T>;
-  readonly #api: Api;
+export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
+  static readonly #BASE_URL = "https://api.maplink.global";
+
+  readonly #api = new Api(MaplinkSDK.#BASE_URL);
   readonly #logger = new Logger("[SDK]");
+  readonly #config: _SDK.Config<T>;
   readonly #auth: Auth;
 
-  private constructor(config: SDK.Config<T>) {
-    this.#config = config;
-    this.#api = new Api(config.url);
+  private constructor(config: _SDK.Config<T>) {
+    this.#config = { ...config, modules: this.#resolveModules(config.modules) };
     this.#auth = new Auth(this.#createPrivilegedScope());
+
     this.#logger.enabled = !!config.enableLogger;
+    if (config.lazyInit) this.#lazyInit();
   }
 
-  /**
-   * Creates a new `MaplinkInitializer` with the SDK's instance.
-   * The services will be available after the initialization.
-   */
-  static create<T extends SDK.ModulesList>(config: SDK.Config<T>) {
+  static create<T extends _SDK.Module.ConfigList, U extends _SDK.Config<T>>(config: U) {
     const maplink = new MaplinkSDK(config);
-    return new MaplinkInitializer(maplink, maplink.#init.bind(maplink));
+    return (config.lazyInit ? maplink : maplink.#createInitializer()) as _SDK.GetPackage<U>;
   }
 
-  // Private Methods -------------------------------------------------------------------------------
+  #resolveModules(modules: _SDK.Config<T>["modules"]) {
+    assert(modules.length, "At least one module is required.");
 
-  // This method is called by the initializer to start the SDK.
+    for (const Module of modules) {
+      assert(Module.prototype instanceof MaplinkModule, "All modules must extend the MaplinkModule class.");
+      assert(!(Module instanceof Auth), "The Auth module is already included in the SDK.");
+    }
+
+    return Array.from(new Set(modules)) as _SDK.Config<T>["modules"];
+  }
+
+  #createInitializer(): _SDK.Initializer<T> {
+    return Object.freeze({
+      init: async () => {
+        await this.#init();
+        return this as unknown as _SDK.Module.ExtendSDK<T>;
+      },
+    });
+  }
+
   async #init() {
     this.#logger.info("Starting SDK...");
-    const result = await this.#auth.init();
-
-    if (result.kind === "success") {
-      this.#loadModules();
-      this.#logger.info("Package is ready.");
-    } else {
-      this.#logger.info("Failed to start:", result.value.message);
-    }
+    this.#loadRequiredModules();
+    this.#loadModules();
+    this.#logger.info("Package is ready.");
   }
 
-  // This method loads the modules into the SDK instance, but it doesn't alter the class type itself.
-  // It is the initializer that will extend the class type with the modules types.
+  async #lazyInit() {
+    this.#logger.info("Lazy initialization enabled.");
+
+    this.#api
+      .beforeFetch(async () => {
+        this.#logger.info("Starting SDK...");
+        this.#loadRequiredModules();
+        this.#logger.info("Package is ready.");
+      })
+      .once()
+      .global();
+
+    this.#loadModules();
+  }
+
+  async #loadRequiredModules() {
+    const initAuth = await this.#auth.init();
+    assert(initAuth.kind === "success", `Failed to start: ${initAuth.value?.message}`);
+  }
+
   #loadModules() {
     this.#logger.info("Loading modules...");
 
-    const modules = this.#config.modules as Constructor<MaplinkModule>[];
-    const modulesNames = modules.map((m) => m.name).join(", ");
-
-    for (const Module of modules) {
-      assert(Module.prototype instanceof MaplinkModule, `Module "${Module.name}" not recognized.`);
-      assert(!(Module instanceof Auth), "Cannot inject the authentication module into the SDK.");
+    for (const Module of this.#config.modules) {
       const module = new Module(this.#createScope());
       Object.assign(this, Object.freeze({ [module.metadata.name]: module }));
     }
 
-    this.#logger.info("Modules loaded:", modulesNames);
+    this.#logger.info("Modules loaded:", this.#config.modules.map((m) => m.name).join(", "));
   }
 
-  #createScope(): Module.Scope {
-    return { api: this.#api.clone(), logger: this.#logger.clone() };
+  #createScope() {
+    return new ModuleScope(this.#api.clone(), this.#logger.clone());
   }
 
-  #createPrivilegedScope(): Module.Scope {
-    return { api: this.#api, logger: this.#logger.clone(), config: this.#config };
+  #createPrivilegedScope() {
+    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#config);
   }
 }
