@@ -1,5 +1,6 @@
 import type { Api } from "core/api";
 import type { Logger } from "core/logger";
+import type { HttpServer } from "core/server";
 import assert from "node:assert";
 import type { ModulePrivilegedScope, ModuleScope } from "./scope";
 import type { _SDK } from "./types";
@@ -22,6 +23,10 @@ export abstract class MaplinkModule<T extends ModuleScope | ModulePrivilegedScop
 
   protected get logger(): Logger {
     return this.#scope.logger;
+  }
+
+  protected get server(): HttpServer | undefined {
+    return this.#scope.server;
   }
 
   protected get config() {

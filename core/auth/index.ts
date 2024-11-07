@@ -49,7 +49,7 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
     this.logger.prefix = "[AUTH]";
   }
 
-  init(): Promise<Either<null, Error>> {
+  init(): Promise<Either<string, Error>> {
     this.logger.info("Starting module...");
     this.#startTokenAutoRefresh();
     return this.refreshToken();
@@ -60,16 +60,19 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
     this.#updateList.push(api);
   }
 
-  async refreshToken(): Promise<Either<null, Error>> {
+  async refreshToken(): Promise<Either<string, Error>> {
+    let token = this.#token.value ?? "";
+
     if (!this.#token.isValid) {
       const { kind, value } = await this.#getToken();
       if (kind === "failure") return { kind, value };
       this.#token.value = value;
+      token = value;
     } else {
       this.#setTokenToApis();
     }
 
-    return new Success(null);
+    return new Success(token);
   }
 
   async #getToken(attempt = 0): Promise<Either<string, Error>> {

@@ -1,6 +1,7 @@
 import type { Api } from "core/api";
 import type { Auth } from "core/auth";
 import type { Logger } from "core/logger";
+import type { HttpServer } from "core/server";
 import type { Geocode } from "modules/geocode";
 import type { Constructor, FilterKeys, NonEmptyArray } from "utils/types";
 import type { MaplinkSDK } from ".";
@@ -36,17 +37,21 @@ export namespace _SDK {
   }
 
   export namespace Module {
-    export interface Services {
+    interface RequiredServices {
+      server: HttpServer;
       auth: Auth;
+    }
+
+    export interface Services {
       geocode: Geocode;
     }
 
     export type Names = keyof Services;
-    export type List = Exclude<Services[Names], Auth>;
+    export type List = Services[Names];
     export type ConfigList = NonEmptyArray<Constructor<List>>;
 
     export interface Metadata {
-      readonly name: Names;
+      readonly name: Names | keyof RequiredServices;
       readonly version: string;
       readonly description: string;
     }
@@ -54,6 +59,7 @@ export namespace _SDK {
     export interface Scope {
       readonly api: Api;
       readonly logger: Logger;
+      readonly server?: HttpServer;
     }
 
     export interface PrivilegedScope extends Scope {

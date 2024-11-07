@@ -1,3 +1,4 @@
+import type { _Http } from "core/http/types";
 import assert from "node:assert";
 import { Failure, Success } from "utils/either";
 import type { Either, Prototype } from "utils/types";
@@ -11,7 +12,7 @@ export class ApiResponse<T = unknown, E = unknown> implements Prototype<ApiRespo
   #request?: ApiRequest;
   readonly ok: boolean;
   readonly status: number;
-  readonly headers: _Api.Http.Headers = {};
+  readonly headers: _Http.Headers = {};
   readonly data: Promise<Either<T, E | Error>>;
 
   constructor(response: Response) {

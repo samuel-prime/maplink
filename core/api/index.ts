@@ -1,3 +1,4 @@
+import type { _Http } from "core/http/types";
 import assert from "node:assert";
 import { AsyncLocalStorage } from "node:async_hooks";
 import EventEmitter from "node:events";
@@ -101,7 +102,7 @@ export class Api implements Prototype<Api> {
     this.#config.defaults.headers.authorization = `${type} ${token}`;
   }
 
-  async #fetch<K extends _Api.Http.Methods, T, E>(...args: _Api.Fetch.GetArgs<K>) {
+  async #fetch<K extends _Http.Methods, T, E>(...args: _Api.Fetch.GetArgs<K>) {
     const { config } = this.#resolveFetchArgs(args);
 
     return Api.#CONTEXT.run(this.#createAsyncContext(args), async () => {
@@ -110,7 +111,7 @@ export class Api implements Prototype<Api> {
     });
   }
 
-  #createAsyncContext<K extends _Api.Http.Methods>(args: _Api.Fetch.GetArgs<K>) {
+  #createAsyncContext<K extends _Http.Methods>(args: _Api.Fetch.GetArgs<K>) {
     const { config } = this.#resolveFetchArgs(args);
 
     const requestConfig = this.#getContextRequestConfig(args);
@@ -130,7 +131,7 @@ export class Api implements Prototype<Api> {
     return Object.freeze({ beforeFetch, afterFetch });
   }
 
-  #getContextRequestConfig<K extends _Api.Http.Methods>(args: _Api.Fetch.GetArgs<K>): _Api.Request.Config {
+  #getContextRequestConfig<K extends _Http.Methods>(args: _Api.Fetch.GetArgs<K>): _Api.Request.Config {
     const { method, endpoint, body, config } = this.#resolveFetchArgs(args);
 
     const url = this.baseUrl.clone();
@@ -140,7 +141,7 @@ export class Api implements Prototype<Api> {
     return Object.freeze({ method, url, body, headers, params, callback });
   }
 
-  #resolveFetchArgs<T extends _Api.Http.Methods>(args: _Api.Fetch.GetArgs<T>) {
+  #resolveFetchArgs<T extends _Http.Methods>(args: _Api.Fetch.GetArgs<T>) {
     const [method, endpoint, args2, args3] = args;
 
     const hasBody = ["POST", "PATCH", "PUT"].includes(method);

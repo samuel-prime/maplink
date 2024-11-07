@@ -1,6 +1,7 @@
 import { Api } from "core/api";
 import { Auth } from "core/auth";
 import { Logger } from "core/logger";
+import { HttpServer } from "core/server";
 import assert from "node:assert";
 import { MaplinkModule } from "./module";
 import { ModulePrivilegedScope, ModuleScope } from "./scope";
@@ -12,13 +13,16 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
   readonly #api = new Api(MaplinkSDK.#BASE_URL);
   readonly #logger = new Logger("[SDK]");
   readonly #config: _SDK.Config<T>;
+  readonly #server?: HttpServer;
   readonly #auth: Auth;
 
   private constructor(config: _SDK.Config<T>) {
+    this.#logger.enabled = !!config.enableLogger;
+
     this.#config = { ...config, modules: this.#resolveModules(config.modules) };
     this.#auth = new Auth(this.#createPrivilegedScope());
 
-    this.#logger.enabled = !!config.enableLogger;
+    if (config.serverPort) this.#server = new HttpServer(this.#createPrivilegedScope());
     if (config.lazyInit) this.#lazyInit();
   }
 
@@ -49,7 +53,7 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
 
   async #init() {
     this.#logger.info("Starting SDK...");
-    this.#loadRequiredModules();
+    await this.#loadRequiredModules();
     this.#loadModules();
     this.#logger.info("Package is ready.");
   }
@@ -58,9 +62,10 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     this.#logger.info("Lazy initialization enabled.");
 
     this.#api
-      .beforeFetch(async () => {
+      .beforeFetch(async (fetch) => {
         this.#logger.info("Starting SDK...");
-        this.#loadRequiredModules();
+        const { token } = await this.#loadRequiredModules();
+        fetch.request.headers.authorization = `Bearer ${token}`;
         this.#logger.info("Package is ready.");
       })
       .once()
@@ -71,7 +76,14 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
 
   async #loadRequiredModules() {
     const initAuth = await this.#auth.init();
-    assert(initAuth.kind === "success", `Failed to start: ${initAuth.value?.message}`);
+    assert(initAuth.kind === "success", `Failed to start: ${(initAuth.value as Error).message}`);
+
+    if (this.#server) {
+      const runServer = this.#server.run();
+      assert(runServer.kind === "success", `Failed to start: ${runServer.value}`);
+    }
+
+    return { token: initAuth.value };
   }
 
   #loadModules() {
@@ -86,10 +98,10 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
   }
 
   #createScope() {
-    return new ModuleScope(this.#api.clone(), this.#logger.clone());
+    return new ModuleScope(this.#api.clone(), this.#logger.clone(), this.#server);
   }
 
   #createPrivilegedScope() {
-    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#config);
+    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#config, this.#server);
   }
 }

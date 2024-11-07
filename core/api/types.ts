@@ -1,3 +1,4 @@
+import type { _Http } from "core/http/types";
 import type { Either } from "utils/types";
 import type { Api } from ".";
 import type { ApiFetch } from "./fetch";
@@ -13,7 +14,7 @@ export namespace _Api {
   }
 
   export interface Defaults {
-    headers?: Http.Headers;
+    headers?: _Http.Headers;
     params?: Request.Params;
     callback?: Request.Callback;
   }
@@ -49,26 +50,26 @@ export namespace _Api {
 
     export type Config = Partial<{
       name: string;
-      headers: Http.Headers;
+      headers: _Http.Headers;
       params: Request.Params;
       callback: Request.Callback;
       hooks: { [K in Hooks.Moments]?: Hooks.Function[] };
     }>;
 
-    type ArgsWithoutBody<T extends Http.Methods> = [T, string, Partial<Config>?];
-    type ArgsWithBody<T extends Http.Methods> = [T, string, Request.Body?, Partial<Config>?];
+    type ArgsWithoutBody<T extends _Http.Methods> = [T, string, Partial<Config>?];
+    type ArgsWithBody<T extends _Http.Methods> = [T, string, Request.Body?, Partial<Config>?];
 
-    export type GetArgs<T extends Http.Methods> = T extends MethodsWithoutBody ? ArgsWithoutBody<T> : ArgsWithBody<T>;
+    export type GetArgs<T extends _Http.Methods> = T extends MethodsWithoutBody ? ArgsWithoutBody<T> : ArgsWithBody<T>;
   }
 
   export namespace Request {
     export interface Config {
-      readonly method: Http.Methods;
+      readonly method: _Http.Methods;
       readonly url: Url;
       params?: Params;
       readonly body: Body;
       callback?: Callback;
-      readonly headers: Http.Headers;
+      readonly headers: _Http.Headers;
     }
 
     export interface Callback {
@@ -86,22 +87,5 @@ export namespace _Api {
       readonly response: Response;
       parse(): Promise<Either<T, E | Error>>;
     }
-  }
-
-  export namespace Http {
-    export type Methods = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-    type CommonHeaders = {
-      authorization: string;
-      "content-type":
-        | "application/x-www-form-urlencoded"
-        | "multipart/form-data"
-        | "application/json"
-        | "text/plain"
-        | "text/html"
-        | (string & {});
-    };
-
-    export type Headers = { [x: string]: string } & Partial<CommonHeaders>;
   }
 }

@@ -42,6 +42,7 @@ export class ApiHookManager {
   changeToGlobal(hook: ApiHook) {
     if (hook.api && this.#hooks.has(hook.api)) {
       this.remove(hook);
+      hook.api = undefined;
       this.#global.push(hook);
     }
   }
@@ -78,15 +79,15 @@ export class ApiHookManager {
 export class ApiHook<T extends _Api.Hooks.Moments = _Api.Hooks.Moments> {
   readonly execute: _Api.Hooks.Function;
   readonly id = randomUUID();
+  readonly moment: T;
   #executeOnce = false;
   #isActive = true;
+  #api?: Api;
 
-  constructor(
-    readonly moment: T,
-    hook: _Api.Hooks.Function,
-    readonly api?: Api,
-  ) {
+  constructor(moment: T, hook: _Api.Hooks.Function, api?: Api) {
     this.execute = this.#decorateHook(hook).bind(this);
+    this.moment = moment;
+    this.#api = api;
   }
 
   get executeOnce() {
@@ -95,6 +96,15 @@ export class ApiHook<T extends _Api.Hooks.Moments = _Api.Hooks.Moments> {
 
   get isActive() {
     return this.#isActive;
+  }
+
+  get api() {
+    return this.#api;
+  }
+
+  set api(api: Api | undefined) {
+    assert(api instanceof Api || api === undefined, "Api must be an instance of the Api class.");
+    this.#api = api;
   }
 
   once(): ApiHook<T> {

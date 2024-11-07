@@ -1,3 +1,4 @@
+import type { _Http } from "core/http/types";
 import assert from "node:assert";
 import { deepClone } from "utils/deep-clone";
 import { deepMerge } from "utils/deep-merge";
@@ -25,7 +26,7 @@ export class ApiConfig implements _Api.Config {
 export class ApiDefaults implements _Api.Defaults {
   #callback?: _Api.Request.Callback;
   #params?: _Api.Request.Params;
-  #headers?: _Api.Http.Headers;
+  #headers?: _Http.Headers;
 
   constructor(defaults?: _Api.Defaults) {
     if (defaults) {
