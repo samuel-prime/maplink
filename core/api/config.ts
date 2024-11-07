@@ -27,13 +27,24 @@ export class ApiDefaults implements _Api.Defaults {
   #callback?: _Api.Request.Callback;
   #params?: _Api.Request.Params;
   #headers?: _Http.Headers;
+  #name?: string;
 
   constructor(defaults?: _Api.Defaults) {
     if (defaults) {
       this.#callback = defaults.callback;
       this.#headers = defaults.headers;
       this.#params = defaults.params;
+      this.#name = defaults.name;
     }
+  }
+
+  get name(): _Api.Defaults["name"] {
+    return this.#name;
+  }
+
+  set name(name: _Api.Defaults["name"]) {
+    assert(typeof name === "string" || name === undefined, "The name must be a string or undefined.");
+    this.#name = name;
   }
 
   get headers(): _Api.Defaults["headers"] {

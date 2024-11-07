@@ -46,6 +46,7 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
       if (this.#token.isValid) api.bearerToken = this.#token.value as string;
     });
 
+    this.api.defaults.name = "auth";
     this.logger.prefix = "[AUTH]";
   }
 

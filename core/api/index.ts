@@ -106,7 +106,7 @@ export class Api implements Prototype<Api> {
     const { config } = this.#resolveFetchArgs(args);
 
     return Api.#CONTEXT.run(this.#createAsyncContext(args), async () => {
-      const fetch = new ApiFetch<T, E>(config?.name);
+      const fetch = new ApiFetch<T, E>(config?.name ?? this.defaults.name);
       return (await fetch.response).data;
     });
   }
@@ -156,6 +156,7 @@ export class Api implements Prototype<Api> {
     api.defaults.headers = this.defaults.headers ? deepClone(this.defaults.headers) : undefined;
     api.defaults.params = this.defaults.params ? deepClone(this.defaults.params) : undefined;
     api.defaults.callback = this.defaults.callback;
+    api.defaults.name = this.defaults.name;
 
     this.#eventEmitter.emit("clone", api);
     return api;

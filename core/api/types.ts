@@ -14,6 +14,7 @@ export namespace _Api {
   }
 
   export interface Defaults {
+    name?: string;
     headers?: _Http.Headers;
     params?: Request.Params;
     callback?: Request.Callback;
@@ -32,6 +33,7 @@ export namespace _Api {
       hookAppend: [ApiHook];
       request: [ApiRequest];
       response: [ApiResponse];
+      fetchEnd: [ApiFetch<unknown, unknown>];
     }
 
     export type Names = keyof List;

@@ -25,7 +25,9 @@ export class ApiFetch<T, E> {
 
     const response = await promise;
     response.request = this.request.clone();
+
     emitter("response", response.clone());
+    emitter("fetchEnd", this);
 
     return response;
   }

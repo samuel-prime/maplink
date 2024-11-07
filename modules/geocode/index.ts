@@ -17,6 +17,7 @@ export class Geocode extends MaplinkModule {
     super(scope, Geocode.METADATA);
 
     this.api.baseUrl.endpoint = Geocode.#ENDPOINT;
+    this.api.defaults.name = "geocode";
     this.logger.prefix = "[GEOCODE]";
     this.globalSearch = false;
   }
