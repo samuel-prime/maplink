@@ -14,7 +14,7 @@ export class HttpServer extends MaplinkModule<ModulePrivilegedScope> {
   static readonly METADATA: _SDK.Module.Metadata = {
     name: "server",
     version: "0.0.1",
-    description: "Handles callbacks and provides logging.",
+    description: "Handles webhook callbacks.",
   };
 
   readonly #config: _HttpServer.Config;

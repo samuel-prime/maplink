@@ -5,8 +5,9 @@ export namespace _Http {
     authorization: string;
     "content-type":
       | "application/x-www-form-urlencoded"
-      | "multipart/form-data"
       | "application/json"
+      | "multipart/form-data"
+      | "text/event-stream"
       | "text/plain"
       | "text/html"
       | (string & {});

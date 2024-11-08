@@ -8,7 +8,7 @@ export class Route {
     readonly handler: _HttpServer.RouteHandler,
   ) {}
 
-  match(method?: string, endpoint = "") {
+  match(method = "", endpoint = "") {
     const regex = new RegExp(this.endpoint);
     return method === this.method && regex.test(endpoint);
   }

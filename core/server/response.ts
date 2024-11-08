@@ -13,19 +13,36 @@ export class HttpResponse {
     return this;
   }
 
-  setHeader(name: string, value: string | number) {
-    this.#response.setHeader(String(name), value);
+  setHeader(name: string, value: string | number | readonly string[]) {
+    this.#response.setHeader(name, value);
     return this;
+  }
+
+  push(body?: string | object) {
+    if (!this.#response.headersSent) {
+      this.#response.writeHead(200, {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        connection: "keep-alive",
+      });
+    }
+
+    this.#response.write(this.#parseBody(body));
   }
 
   send(body?: string | object) {
     if (!body) return this.#response.end();
-
     const data = this.#parseBody(body);
+
     this.setHeader("content-length", Buffer.byteLength(data));
-    this.setHeader("content-type", isObject(body) ? "application/json" : "text/plain");
+    const hasContentType = this.#response.hasHeader("content-type");
+    if (!hasContentType) this.setHeader("content-type", isObject(body) ? "application/json" : "text/plain");
 
     this.#response.end(data);
+  }
+
+  onClose(listener: () => void) {
+    this.#response.on("close", listener);
   }
 
   #parseBody(body?: string | object) {

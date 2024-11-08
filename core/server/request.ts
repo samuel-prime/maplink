@@ -31,10 +31,10 @@ export class HttpRequest {
   }
 
   async data<T>(): Promise<Either<T, Error>> {
+    const isJson = this.headers["content-type"]?.includes("application/json");
+
     try {
-      const buffer = await this.#rawData;
-      const data = buffer.toString();
-      const isJson = this.headers["content-type"] === "application/json";
+      const data = (await this.#rawData).toString();
       return new Success((isJson ? JSON.parse(data) : data) as T);
     } catch (error) {
       return new Failure(error as Error);
