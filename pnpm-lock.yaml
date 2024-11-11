@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      typed-html:
+        specifier: ^3.0.1
+        version: 3.0.1
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.3
@@ -717,6 +721,10 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  typed-html@3.0.1:
+    resolution: {integrity: sha512-JKCM9zTfPDuPqQqdGZBWSEiItShliKkBFg5c6yOR8zth43v763XkAzTWaOlVqc0Y6p9ee8AaAbipGfUnCsYZUA==}
+    engines: {node: '>=12'}
+
   typescript@5.6.3:
     resolution: {integrity: sha512-hjcS1mhfuyi4WW8IWtjP7brDrG2cuDZukyrYrSauoXGNgx0S7zceP07adYkJycEr56BOUTNPzbInooiN3fn1qw==}
     engines: {node: '>=14.17'}
@@ -1310,6 +1318,8 @@ snapshots:
       get-tsconfig: 4.8.1
     optionalDependencies:
       fsevents: 2.3.3
+
+  typed-html@3.0.1: {}
 
   typescript@5.6.3: {}
 
