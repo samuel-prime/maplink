@@ -1,6 +1,6 @@
-import type { Api } from "core/api";
-import type { Logger } from "core/logger";
-import type { HttpServer } from "core/server";
+import type { Api } from "lib/api";
+import type { Logger } from "lib/logger";
+import type { HttpServer } from "lib/server";
 import assert from "node:assert";
 import type { ModulePrivilegedScope, ModuleScope } from "./scope";
 import type { _SDK } from "./types";

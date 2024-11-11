@@ -1,9 +1,8 @@
 /**
  * Creates a deep clone of the given object.
  *
- * This function serializes the object to a JSON string and then parses it back to a new object,
- * effectively creating a deep copy. Note that this method may not handle all edge cases, such as
- * objects with circular references, functions, or special object types like `Date` or `Map`.
+ * This function serializes the object to a JSON string and then parses it back to a new object.
+ * It may not handle all edge cases, such as objects with circular references, functions, or private properties.
  *
  * @template T - The type of the object to be cloned.
  * @param {T} value - The object to be deep cloned.

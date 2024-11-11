@@ -1,7 +1,7 @@
-import { Api } from "core/api";
 import { MaplinkModule } from "core/maplink/module";
 import type { ModulePrivilegedScope } from "core/maplink/scope";
 import type { _SDK } from "core/maplink/types";
+import { Api } from "lib/api";
 import assert from "node:assert";
 import { Failure, Success } from "utils/either";
 import type { Either } from "utils/types";
