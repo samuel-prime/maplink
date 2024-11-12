@@ -1,7 +1,8 @@
-import type { Api } from "core/api";
 import type { Auth } from "core/auth";
-import type { Logger } from "core/logger";
-import type { HttpServer } from "core/server";
+import type { Monitor } from "core/monitor";
+import type { Api } from "lib/api";
+import type { Logger } from "lib/logger";
+import type { HttpServer } from "lib/server";
 import type { Geocode } from "modules/geocode";
 import type { Constructor, FilterKeys, NonEmptyArray } from "utils/types";
 import type { MaplinkSDK } from ".";
@@ -38,7 +39,7 @@ export namespace _SDK {
 
   export namespace Module {
     interface RequiredServices {
-      server: HttpServer;
+      monitor: Monitor;
       auth: Auth;
     }
 

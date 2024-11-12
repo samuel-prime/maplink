@@ -1,6 +1,6 @@
-import type { Api } from "core/api";
-import type { Logger } from "core/logger";
-import type { HttpServer } from "core/server";
+import type { Api } from "lib/api";
+import type { Logger } from "lib/logger";
+import type { HttpServer } from "lib/server";
 import type { _SDK } from "./types";
 
 export class ModuleScope implements _SDK.Module.Scope {

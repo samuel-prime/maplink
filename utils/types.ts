@@ -130,3 +130,37 @@ export type Constructor<T> = new (...args: any[]) => T;
  * @returns The intersection type derived from the union type `U`.
  */
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+
+/**
+ * The `Http` namespace provides types and interfaces related to HTTP requests and responses.
+ * This namespace includes types for HTTP methods, common headers, and request headers.
+ *
+ * @namespace Http
+ */
+export namespace Http {
+  /**
+   * Represents the HTTP methods that can be used in requests.
+   */
+  export type Methods = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+  /**
+   * Represents common HTTP headers that can be included in requests.
+   */
+  type CommonHeaders = {
+    authorization: string;
+    "content-type":
+      | "application/x-www-form-urlencoded"
+      | "application/json"
+      | "multipart/form-data"
+      | "text/event-stream"
+      | "text/plain"
+      | "text/html"
+      | (string & {});
+  };
+
+  /**
+   * Represents the headers that can be included in an HTTP request.
+   * This type includes both common headers and any additional custom headers.
+   */
+  export type Headers = { [x: string]: string } & Partial<CommonHeaders>;
+}

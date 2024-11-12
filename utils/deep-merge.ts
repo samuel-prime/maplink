@@ -1,5 +1,5 @@
 /**
- * Deeply merges two objects, `target` and `source`, into a new object.
+ * Deeply merges an object `source` into an object `target`.
  * Properties from `source` will overwrite those in `target` if they exist.
  *
  * @template T - The type of the target object.

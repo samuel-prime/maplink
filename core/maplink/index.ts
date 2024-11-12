@@ -1,11 +1,8 @@
-import { Api } from "core/api";
-import type { _Api } from "core/api/types";
 import { Auth } from "core/auth";
-import { Logger } from "core/logger";
-import { HttpServer } from "core/server";
-import type { HttpRequest } from "core/server/request";
-import type { HttpResponse } from "core/server/response";
-import type { _HttpServer } from "core/server/types";
+import { Monitor } from "core/monitor";
+import { Api } from "lib/api";
+import { Logger } from "lib/logger";
+import { HttpServer } from "lib/server";
 import assert from "node:assert";
 import { MaplinkModule } from "./module";
 import { ModulePrivilegedScope, ModuleScope } from "./scope";
@@ -26,10 +23,8 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     this.#config = { ...config, modules: this.#resolveModules(config.modules) };
     this.#auth = new Auth(this.#createPrivilegedScope());
 
-    if (config.serverPort) this.#server = new HttpServer(this.#createPrivilegedScope());
+    if (config.serverPort) this.#server = new HttpServer({ port: config.serverPort });
     if (config.lazyInit) this.#lazyInit();
-
-    this.#server?.get("/monitor", this.#createMonitorRoute());
   }
 
   static create<T extends _SDK.Module.ConfigList, U extends _SDK.Config<T>>(config: U) {
@@ -85,7 +80,11 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     assert(initAuth.kind === "success", `Failed to start: ${initAuth.value}`);
 
     if (this.#server) {
-      const runServer = this.#server.run();
+      const runServer = this.#server.run((url) => {
+        this.#logger.info(`Server running at ${url}`);
+        new Monitor(this.#createPrivilegedScope());
+      });
+
       assert(runServer.kind === "success", `Failed to start: ${runServer.value}`);
     }
 
@@ -101,27 +100,6 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     }
 
     this.#logger.info("Modules loaded:", this.#config.modules.map((m) => m.name).join(", "));
-  }
-
-  #createMonitorRoute(): _HttpServer.RouteHandler {
-    return async (_req: HttpRequest, res: HttpResponse) => {
-      const listener: _Api.Events.Listener<"fetchEnd"> = async (fetch) => {
-        const { id, request, name } = fetch;
-
-        const response = await fetch.response;
-        const data = await response.data;
-
-        res.push({
-          id,
-          name,
-          response: { ok: response.ok, status: response.status, headers: response.headers, body: data },
-          request: { method: request.method, url: request.url.href, headers: request.headers, body: request.body },
-        });
-      };
-
-      res.onClose(() => this.#api.removeListener("fetchEnd", listener));
-      this.#api.on("fetchEnd", listener);
-    };
   }
 
   #createScope() {
