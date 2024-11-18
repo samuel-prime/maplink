@@ -25,7 +25,7 @@ export abstract class MaplinkModule<T extends ModuleScope | ModulePrivilegedScop
     return this.#scope.logger;
   }
 
-  protected get server(): HttpServer | undefined {
+  protected get server(): HttpServer {
     return this.#scope.server;
   }
 

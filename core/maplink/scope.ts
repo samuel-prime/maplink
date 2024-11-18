@@ -7,7 +7,7 @@ export class ModuleScope implements _SDK.Module.Scope {
   constructor(
     readonly api: Api,
     readonly logger: Logger,
-    readonly server?: HttpServer,
+    readonly server: HttpServer,
   ) {}
 }
 
@@ -15,7 +15,7 @@ export class ModulePrivilegedScope implements _SDK.Module.PrivilegedScope {
   constructor(
     readonly api: Api,
     readonly logger: Logger,
+    readonly server: HttpServer,
     readonly config: _SDK.Config<any>,
-    readonly server?: HttpServer,
   ) {}
 }

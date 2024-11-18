@@ -65,11 +65,11 @@ export class Api implements Prototype<Api> {
     this.#eventEmitter.removeListener(event, listener);
   }
 
-  beforeFetch(hook: _Api.Hooks.Function) {
+  beforeFetch<T, E>(hook: _Api.Hooks.Function<T, E>) {
     return this.#handleHookCreation(new ApiHook("beforeFetch", hook, this));
   }
 
-  afterFetch(hook: _Api.Hooks.Function) {
+  afterFetch<T, E>(hook: _Api.Hooks.Function<T, E>) {
     return this.#handleHookCreation(new ApiHook("afterFetch", hook, this));
   }
 

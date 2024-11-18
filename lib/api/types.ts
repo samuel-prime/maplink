@@ -45,7 +45,7 @@ export namespace _Api {
   export namespace Hooks {
     export type Moments = "beforeFetch" | "afterFetch";
     export type List = { [K in Moments]: ApiHook<K>[] };
-    export type Function = <T, E>(fetch: ApiFetch<T, E>) => Promise<void>;
+    export type Function<T = any, E = any> = (fetch: ApiFetch<T, E>) => Promise<void>;
   }
 
   export namespace Fetch {

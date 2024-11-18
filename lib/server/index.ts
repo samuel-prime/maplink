@@ -11,11 +11,14 @@ export class HttpServer {
   readonly #config: _HttpServer.Config;
   readonly #routes: Route[] = [];
   #server?: Server;
-  #url?: string;
 
   constructor(config: _HttpServer.Config) {
     assert(config?.port, "Invalid port number.");
     this.#config = config;
+  }
+
+  get url() {
+    return this.#config.publicUrl;
   }
 
   get(endpoint: string, handler: _HttpServer.RouteHandler) {
@@ -38,10 +41,6 @@ export class HttpServer {
     this.#routes.push(new Route("DELETE", endpoint, handler));
   }
 
-  get url() {
-    return this.#url;
-  }
-
   run(callback?: (url?: string) => void): Either<string, string> {
     try {
       this.#server = createServer(async (req, res) => {
@@ -53,6 +52,7 @@ export class HttpServer {
 
         for (const route of this.#routes) {
           if (route.match(method, endpoint)) {
+            request.route = route;
             const data = await route.handler(request, response);
             return data ? response.send(data) : undefined;
           }
@@ -61,10 +61,8 @@ export class HttpServer {
         response.status(404).send();
       });
 
-      this.#url = `http://localhost:${this.#config.port}/`;
-      this.#server.listen(this.#config.port, () => (callback ? callback(this.#url) : undefined));
-
-      return new Success(this.#url);
+      this.#server.listen(this.#config.port, () => (callback ? callback(this.#config.publicUrl) : undefined));
+      return new Success(this.#config.publicUrl);
     } catch (error) {
       return new Failure((error as Error).message);
     }

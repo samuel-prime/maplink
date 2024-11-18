@@ -14,16 +14,17 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
   readonly #api = new Api(MaplinkSDK.#BASE_URL);
   readonly #logger = new Logger("[SDK]");
   readonly #config: _SDK.Config<T>;
-  readonly #server?: HttpServer;
+  readonly #server: HttpServer;
   readonly #auth: Auth;
+  #monitor?: Monitor;
 
   private constructor(config: _SDK.Config<T>) {
     this.#logger.enabled = !!config.enableLogger;
 
     this.#config = { ...config, modules: this.#resolveModules(config.modules) };
     this.#auth = new Auth(this.#createPrivilegedScope());
+    this.#server = new HttpServer({ port: config.serverPort, publicUrl: config.serverPublicUrl });
 
-    if (config.serverPort) this.#server = new HttpServer({ port: config.serverPort });
     if (config.lazyInit) this.#lazyInit();
   }
 
@@ -79,14 +80,12 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     const initAuth = await this.#auth.init();
     assert(initAuth.kind === "success", `Failed to start: ${initAuth.value}`);
 
-    if (this.#server) {
-      const runServer = this.#server.run((url) => {
-        this.#logger.info(`Server running at ${url}`);
-        new Monitor(this.#createPrivilegedScope());
-      });
+    const runServer = this.#server.run((url) => {
+      this.#logger.info(`Server running at ${url}`);
+      this.#monitor = new Monitor(this.#createPrivilegedScope());
+    });
 
-      assert(runServer.kind === "success", `Failed to start: ${runServer.value}`);
-    }
+    assert(runServer.kind === "success", `Failed to start: ${runServer.value}`);
 
     return { token: initAuth.value };
   }
@@ -107,6 +106,6 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
   }
 
   #createPrivilegedScope() {
-    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#config, this.#server);
+    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#server, this.#config);
   }
 }

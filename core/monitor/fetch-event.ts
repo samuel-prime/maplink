@@ -15,6 +15,7 @@ export class FetchEvent<T, E> extends ServerEvent<FetchEventData<T, E>> {
     const type = value instanceof Error ? "error" : kind;
 
     const data = {
+      jobId: fetch.tag,
       timestamp: new Date(),
       duration: fetch.getDuration(),
       request: { method: request.method, url: request.url.href, body: request.body },

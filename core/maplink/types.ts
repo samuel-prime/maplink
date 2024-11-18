@@ -4,6 +4,7 @@ import type { Api } from "lib/api";
 import type { Logger } from "lib/logger";
 import type { HttpServer } from "lib/server";
 import type { Geocode } from "modules/geocode";
+import type { Planning } from "modules/planning";
 import type { Constructor, FilterKeys, NonEmptyArray } from "utils/types";
 import type { MaplinkSDK } from ".";
 
@@ -13,7 +14,8 @@ export namespace _SDK {
     clientId: string;
     clientSecret: string;
     lazyInit?: boolean;
-    serverPort?: number;
+    serverPort: number;
+    serverPublicUrl: string;
     enableLogger?: boolean;
     refreshTokenInterval?: number;
   }
@@ -35,6 +37,34 @@ export namespace _SDK {
       type: string;
       details: T[];
     }
+
+    export namespace Event {
+      type Type = "STATUS_CHANGE" | "STEP_CHANGE" | "PERCENT_CHANGE" | "WARNING" | "ERROR";
+
+      type Status =
+        | "ENQUEUED"
+        | "CONVERT_TO_MATRIX"
+        | "PROCESSING"
+        | "MATRIX_CALCULATION"
+        | "CALCULATE_PLANNING"
+        | "SOLVED";
+
+      type Step =
+        | `progress ${number}%`
+        | "PRE_TREATMENTS"
+        | "INITIAL_CONSTRUCTION"
+        | "IMPROVEMENT"
+        | "POST_TREATMENTS"
+        | "TERMINATE";
+
+      export interface Data {
+        id: string;
+        jobId: string;
+        type: Type;
+        description: Status | Step | number;
+        createdAt: number;
+      }
+    }
   }
 
   export namespace Module {
@@ -45,6 +75,7 @@ export namespace _SDK {
 
     export interface Services {
       geocode: Geocode;
+      planning: Planning;
     }
 
     export type Names = keyof Services;
@@ -60,7 +91,7 @@ export namespace _SDK {
     export interface Scope {
       readonly api: Api;
       readonly logger: Logger;
-      readonly server?: HttpServer;
+      readonly server: HttpServer;
     }
 
     export interface PrivilegedScope extends Scope {

@@ -1,10 +1,13 @@
 import type { IncomingMessage } from "node:http";
 import { Failure, Success } from "utils/either";
 import type { Either } from "utils/types";
+import type { Route } from "./route";
 
 export class HttpRequest {
+  readonly params: Record<string, string> = {};
   readonly #incomingMessage: IncomingMessage;
   #rawData: Promise<Buffer>;
+  #route?: Route;
 
   constructor(incomingMessage: IncomingMessage) {
     this.#incomingMessage = incomingMessage;
@@ -16,6 +19,21 @@ export class HttpRequest {
       incomingMessage.on("end", () => resolve(Buffer.concat(chunks)));
       incomingMessage.on("error", (error) => reject(error));
     });
+  }
+
+  set route(route: Route) {
+    this.#route = route;
+
+    const keys = route.endpoint?.split("/") ?? [];
+    const values = this.endpoint?.replaceAll(/\?.*$/g, "").split("/") ?? [];
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+
+      if (route.params.includes(key)) {
+        this.params[key] = values[i];
+      }
+    }
   }
 
   get method() {

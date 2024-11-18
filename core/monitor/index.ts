@@ -1,15 +1,13 @@
 import { MaplinkModule } from "core/maplink/module";
 import type { ModulePrivilegedScope } from "core/maplink/scope";
 import type { _SDK } from "core/maplink/types";
-import type { _Api } from "lib/api/types";
 import { ServerEvent } from "lib/server/event";
-import type { HttpRequest } from "lib/server/request";
 import type { HttpResponse } from "lib/server/response";
-import type { _HttpServer } from "lib/server/types";
-import assert from "node:assert";
+import { EventEmitter } from "node:stream";
 import { FetchEvent } from "./fetch-event";
 import { MonitorPage } from "./html";
 import { EventCard } from "./html/event-card";
+import { EventStatus } from "./html/event-status";
 
 export class Monitor extends MaplinkModule<ModulePrivilegedScope> {
   static readonly METADATA: _SDK.Module.Metadata = {
@@ -21,68 +19,83 @@ export class Monitor extends MaplinkModule<ModulePrivilegedScope> {
   static readonly SPOIL_TIME = 2 * 60 * 60 * 1000; // 2 hours
 
   readonly #intervalId?: NodeJS.Timeout;
-  #events: FetchEvent<unknown, unknown>[] = [];
+  readonly #eventEmitter = new EventEmitter();
+  #events: Array<{ event: FetchEvent<unknown, unknown>; status?: _SDK.Api.Event.Data }> = [];
 
   constructor(scope: ModulePrivilegedScope) {
     super(scope, Monitor.METADATA);
     this.logger.prefix = "[MONITOR]";
 
-    if (this.server) {
-      this.server.get("/fetch-stream/html", this.#createHtmlFetchStreamRoute());
-      this.server.get("/fetch-stream", this.#createFetchStreamRoute());
-      this.server.get("/monitor", this.#createMonitorRoute());
+    this.api.on("fetchEnd", async (fetch) => {
+      const event = await FetchEvent.create(fetch);
+      this.#events.push({ event });
+      this.#eventEmitter.emit("new_fetch", event);
+    });
 
-      this.#intervalId = setInterval(
-        () => (this.#events = this.#events.filter((e) => Date.now() - e.data.timestamp.getTime() < Monitor.SPOIL_TIME)),
-        Monitor.SPOIL_TIME,
+    this.#configureServerRoutes();
+
+    this.#intervalId = setInterval(() => {
+      this.#events = this.#events.filter(
+        ({ event }) => Date.now() - event.data.timestamp.getTime() < Monitor.SPOIL_TIME,
       );
+    }, Monitor.SPOIL_TIME);
 
-      this.server.onClose(() => clearInterval(this.#intervalId));
-    }
+    this.server.onClose(() => clearInterval(this.#intervalId));
   }
 
-  #createFetchStreamRoute(): _HttpServer.RouteHandler {
-    return async (_req: HttpRequest, res: HttpResponse) => {
-      const listener: _Api.Events.Listener<"fetchEnd"> = async (fetch) => {
-        const event = await FetchEvent.create(fetch);
-        this.#events.push(event);
-        res.push(event);
-      };
-
-      res.onClose(() => this.api.removeListener("fetchEnd", listener));
-      this.api.on("fetchEnd", listener);
-    };
+  #setListener(res: HttpResponse, event: string, listener: (...args: any[]) => Promise<void>) {
+    res.onClose(() => this.#eventEmitter.removeListener(event, listener));
+    this.#eventEmitter.on(event, listener);
   }
 
-  #createHtmlFetchStreamRoute(): _HttpServer.RouteHandler {
-    return async (_req: HttpRequest, res: HttpResponse) => {
-      const listener: _Api.Events.Listener<"fetchEnd"> = async (fetch) => {
-        const event = await FetchEvent.create(fetch);
-        this.#events.push(event);
-        const card = EventCard(event).replaceAll("\n", "");
-        res.push(new ServerEvent(event.id, event.name, card));
-      };
-
-      res.onClose(() => this.api.removeListener("fetchEnd", listener));
-      this.api.on("fetchEnd", listener);
-    };
-  }
-
-  #createMonitorRoute(): _HttpServer.RouteHandler {
-    const { url } = this.server ?? {};
-    assert(url, "The server URL is required to create the monitor route");
-
-    return async (_req: HttpRequest, res: HttpResponse) => {
+  #configureServerRoutes() {
+    this.server.get("/monitor", async (_req, res) => {
       res.setHeader("content-type", "text/html");
       res.send(
         MonitorPage({
-          url: new URL("/fetch-stream/html", url).pathname,
           children: this.#events
             .toReversed()
-            .map((e) => EventCard(e))
+            .map(({ event, status }) => EventCard(event, status))
             .join("\n"),
         }),
       );
-    };
+    });
+
+    this.server.get("/fetch-stream", async (_req, res) => {
+      this.#setListener(res, "new_fetch", async (event: FetchEvent<any, any>) => res.push(event));
+    });
+
+    this.server.get("/fetch-stream/html", async (_req, res) => {
+      this.#setListener(res, "new_fetch", async (event: FetchEvent<any, any>) => {
+        const card = EventCard(event).replaceAll("\n", "");
+        res.push(new ServerEvent(event.id, event.name, card));
+      });
+    });
+
+    this.server.get("/fetch-stream/callback", async (_req, res) => {
+      this.#setListener(res, "callback", async (event: _SDK.Api.Event.Data) => {
+        res.push(new ServerEvent(event.id, event.jobId, event));
+        if (event.description === "TERMINATE") res.close();
+      });
+    });
+
+    this.server.get("/fetch-stream/callback/html", async (_req, res) => {
+      this.#setListener(res, "callback", async (event: _SDK.Api.Event.Data) => {
+        const card = EventStatus(event).replaceAll("\n", "");
+        res.push(new ServerEvent(event.id, event.jobId, card));
+        if (event.description === "TERMINATE") res.close();
+      });
+    });
+
+    this.server.post("/", async (req, res) => {
+      const { kind, value } = await req.data<_SDK.Api.Event.Data[]>();
+      if (kind === "failure" || value.length === 0) return res.send();
+
+      const [event] = value;
+      const data = this.#events.find((d) => d.event.data.jobId === event.jobId);
+      if (data) data.status = event;
+
+      this.#eventEmitter.emit("callback", event);
+    });
   }
 }

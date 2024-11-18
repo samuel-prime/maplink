@@ -1,7 +1,9 @@
+import type { _SDK } from "core/maplink/types";
 import * as elements from "typed-html";
 import type { FetchEvent } from "../fetch-event";
+import { EventStatus } from "./event-status";
 
-export function EventCard(fetchEvent: FetchEvent<any, any>) {
+export function EventCard(fetchEvent: FetchEvent<any, any>, status?: _SDK.Api.Event.Data) {
   const { id, name, data } = fetchEvent;
   const { request, response, timestamp, duration } = data;
 
@@ -25,9 +27,35 @@ export function EventCard(fetchEvent: FetchEvent<any, any>) {
 
             <span class="rounded-md border border-slate-300 text-sm py-0.5 px-2">{duration} ms</span>
           </div>
-          <span>
-            <strong>id:</strong> {id}
-          </span>
+          <div class="flex gap-6 items-center">
+            {status && (status.description === "TERMINATE" || status.description === "SOLVED") ? (
+              <EventStatus
+                type={status.type}
+                createdAt={status.createdAt}
+                description={status.description}
+                id={status.id}
+                jobId={status.jobId}
+              />
+            ) : (
+              data.jobId && (
+                <div hx-ext="sse" sse-connect="/fetch-stream/callback/html" sse-swap={data.jobId}>
+                  {status && (
+                    <EventStatus
+                      type={status.type}
+                      createdAt={status.createdAt}
+                      description={status.description}
+                      id={status.id}
+                      jobId={status.jobId}
+                    />
+                  )}
+                </div>
+              )
+            )}
+
+            <span class="flex gap-2 items-center">
+              <strong>id:</strong> {id}
+            </span>
+          </div>
         </summary>
 
         <div class="mt-4 grid grid-cols-2 gap-6">

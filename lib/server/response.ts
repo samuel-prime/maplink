@@ -47,4 +47,8 @@ export class HttpResponse {
   onClose(listener: () => void) {
     this.#response.on("close", listener);
   }
+
+  close() {
+    this.#response.end();
+  }
 }

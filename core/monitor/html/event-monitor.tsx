@@ -1,13 +1,13 @@
 // biome-ignore lint:
 import * as elements from "typed-html";
 
-export function EventMonitor({ url, children }: { url: string } & elements.Children) {
+export function EventMonitor({ children }: elements.Children) {
   return (
     <div>
       <div
         hx-ext="sse"
-        sse-connect={url}
-        sse-swap="auth,geocode,planning,trip"
+        sse-connect="/fetch-stream/html"
+        sse-swap="geocode,planning,trip"
         hx-swap="afterbegin"
         hx-target="#events-list"
       />

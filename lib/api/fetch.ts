@@ -7,8 +7,12 @@ export class ApiFetch<T, E> {
   readonly id = Api.getContext().fetchId;
   readonly request = new ApiRequest();
   readonly response = this.#execute();
+  name?: string;
+  tag?: string;
 
-  constructor(readonly name?: string) {
+  constructor(name?: string) {
+    this.name = name;
+
     this.response.then(async () => {
       const { hooks, emitter } = Api.getContext();
       await Promise.allSettled(hooks.afterFetch.map((hook) => hook.execute(this)));
