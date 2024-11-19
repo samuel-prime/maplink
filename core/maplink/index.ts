@@ -16,7 +16,7 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
   readonly #config: _SDK.Config<T>;
   readonly #server: HttpServer;
   readonly #auth: Auth;
-  #monitor?: Monitor;
+  readonly #monitor: Monitor;
 
   private constructor(config: _SDK.Config<T>) {
     this.#logger.enabled = !!config.enableLogger;
@@ -24,6 +24,7 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     this.#config = { ...config, modules: this.#resolveModules(config.modules) };
     this.#auth = new Auth(this.#createPrivilegedScope());
     this.#server = new HttpServer({ port: config.serverPort, publicUrl: config.serverPublicUrl });
+    this.#monitor = new Monitor(this.#createPrivilegedScope());
 
     if (config.lazyInit) this.#lazyInit();
   }
@@ -80,11 +81,7 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
     const initAuth = await this.#auth.init();
     assert(initAuth.kind === "success", `Failed to start: ${initAuth.value}`);
 
-    const runServer = this.#server.run((url) => {
-      this.#logger.info(`Server running at ${url}`);
-      this.#monitor = new Monitor(this.#createPrivilegedScope());
-    });
-
+    const runServer = this.#server.run((url) => this.#logger.info(`Server running at ${url}`));
     assert(runServer.kind === "success", `Failed to start: ${runServer.value}`);
 
     return { token: initAuth.value };
@@ -102,10 +99,10 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
   }
 
   #createScope() {
-    return new ModuleScope(this.#api.clone(), this.#logger.clone(), this.#server);
+    return new ModuleScope(this.#api.clone(), this.#logger.clone(), this.#server, this.#monitor);
   }
 
   #createPrivilegedScope() {
-    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#server, this.#config);
+    return new ModulePrivilegedScope(this.#api, this.#logger.clone(), this.#server, this.#config, this.#monitor);
   }
 }

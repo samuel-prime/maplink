@@ -15,6 +15,7 @@ export function BaseHtml({ children }: elements.Children) {
           crossorigin="anonymous"
         />
         <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js" />
+        <script src="https://unpkg.com/hyperscript.org@0.9.13" />
         <script src="https://unpkg.com/@alenaksu/json-viewer@2.1.0/dist/json-viewer.bundle.js" />
       </head>
       <body class="text-slate-800 size-full bg-gray-50 flex flex-col p-10 gap-8">

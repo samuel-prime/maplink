@@ -92,6 +92,7 @@ export namespace _SDK {
       readonly api: Api;
       readonly logger: Logger;
       readonly server: HttpServer;
+      readonly monitor: Monitor;
     }
 
     export interface PrivilegedScope extends Scope {
