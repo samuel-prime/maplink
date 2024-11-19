@@ -6,6 +6,7 @@ The Maplink SDK is a library that provides easy access to Maplink's services, in
 
 - **Authentication**: Handles the authentication process, including token management and refreshing.
 - **Geocoding**: Provides geocoding services to convert addresses into geographic coordinates.
+- **Planning**: Provides logistics optimization services to calculate the best routes for multiple vehicles.
 - **Logging**: Integrated logging support to help with debugging and monitoring.
 
 ## Installation
