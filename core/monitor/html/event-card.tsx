@@ -7,6 +7,8 @@ export function EventCard(fetchEvent: FetchEvent<any, any>, status?: _SDK.Api.Ev
   const { id, name, data } = fetchEvent;
   const { request, response, timestamp, duration } = data;
 
+  const htmlId = id.replaceAll("-", "");
+
   return (
     <li class="bg-gray-50 rounded-md">
       <details class="p-4">
@@ -60,12 +62,115 @@ export function EventCard(fetchEvent: FetchEvent<any, any>, status?: _SDK.Api.Ev
 
         <div class="mt-4 grid grid-cols-2 gap-6">
           <div>
-            <h3 class="font-semibold mb-4">Request</h3>
-            <json-viewer class="px-4 py-2 rounded-lg text-sm" data={JSON.stringify(request)} />
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold">Request</h3>
+
+              <div class="flex items-center gap-2">
+                <input
+                  class="text-sm border border-slate-300 rounded-md px-2 py-0.5 w-40"
+                  placeholder="filter"
+                  onkeydown={`(({key, target: {value}}) => {if (key === 'Enter') document.querySelector('#request-${htmlId}').filter(new RegExp(".*" + value + ".*"))})(event)`}
+                />
+
+                <input
+                  class="text-sm border border-slate-300 rounded-md px-2 py-0.5 w-40"
+                  placeholder="search"
+                  onkeydown={`((e) => {if (e.key === 'Enter') document.querySelector('#request-${htmlId}').search(e.target.value).next();})(event)`}
+                />
+
+                {
+                  // biome-ignore lint:
+                  <button
+                    class="bg-slate-100 rounded-md px-2 py-0.5 text-sm"
+                    onclick={`document.querySelector('#request-${htmlId}').collapseAll()`}
+                  >
+                    collapse
+                  </button>
+                }
+
+                {
+                  // biome-ignore lint:
+                  <button
+                    class="bg-slate-100 rounded-md px-2 py-0.5 text-sm"
+                    onclick={`document.querySelector('#request-${htmlId}').expandAll()`}
+                  >
+                    expand
+                  </button>
+                }
+
+                {
+                  // biome-ignore lint:
+                  <button
+                    class="bg-slate-800 rounded-md px-2 py-0.5 text-sm text-white"
+                    _={`on click writeText('${JSON.stringify(request)}') on navigator.clipboard
+                  put 'copied!' into me
+                  wait 1s
+                  put 'copy' into me`}
+                  >
+                    copy
+                  </button>
+                }
+              </div>
+            </div>
+            <json-viewer id={`request-${htmlId}`} class="px-4 py-2 rounded-lg text-sm" data={JSON.stringify(request)} />
           </div>
           <div>
-            <h3 class="font-semibold mb-4">Response</h3>
-            <json-viewer class="px-4 py-2 rounded-lg text-sm" data={JSON.stringify(response)} />
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold">Response</h3>
+
+              <div class="flex items-center gap-2">
+                <input
+                  class="text-sm border border-slate-300 rounded-md px-2 py-0.5 w-40"
+                  placeholder="filter"
+                  onkeydown={`(({key, target: {value}}) => {if (key === 'Enter') document.querySelector('#response-${htmlId}').filter(new RegExp(".*" + value + ".*"))})(event)`}
+                />
+
+                <input
+                  class="text-sm border border-slate-300 rounded-md px-2 py-0.5 w-40"
+                  placeholder="search"
+                  onkeydown={`((e) => {if (e.key === 'Enter') document.querySelector('#response-${htmlId}').search(e.target.value).next();})(event)`}
+                />
+
+                {
+                  // biome-ignore lint:
+                  <button
+                    class="bg-slate-100 rounded-md px-2 py-0.5 text-sm"
+                    onclick={`document.querySelector('#response-${htmlId}').collapseAll()`}
+                  >
+                    collapse
+                  </button>
+                }
+
+                {
+                  // biome-ignore lint:
+                  <button
+                    class="bg-slate-100 rounded-md px-2 py-0.5 text-sm"
+                    onclick={`document.querySelector('#response-${htmlId}').expandAll()`}
+                  >
+                    expand
+                  </button>
+                }
+
+                {
+                  // biome-ignore lint:
+                  <button
+                    class="bg-slate-800 rounded-md px-2 py-0.5 text-sm text-white"
+                    _={`on click writeText('${JSON.stringify(response)}') on navigator.clipboard
+                  put 'copied!' into me
+                  wait 1s
+                  put 'copy' into me`}
+                  >
+                    copy
+                  </button>
+                }
+              </div>
+            </div>
+
+            <json-viewer
+              id={`response-${htmlId}`}
+              class="px-4 py-2 rounded-lg text-sm"
+              data={JSON.stringify(response)}
+            />
           </div>
         </div>
       </details>

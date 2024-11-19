@@ -98,4 +98,12 @@ export class Monitor extends MaplinkModule<ModulePrivilegedScope> {
       this.#eventEmitter.emit("callback", event);
     });
   }
+
+  onCallback(listener: (event: _SDK.Api.Event.Data) => Promise<void> | void) {
+    this.#eventEmitter.on("callback", listener);
+  }
+
+  removeCallbackListener(listener: (event: _SDK.Api.Event.Data) => Promise<void> | void) {
+    this.#eventEmitter.removeListener("callback", listener);
+  }
 }

@@ -12,6 +12,10 @@ export function EventStatus({ createdAt, description, type }: _SDK.Api.Event.Dat
         {description === "TERMINATE" || description === "SOLVED" ? (
           <span class="text-green-500 font-medium">{description}</span>
         ) : typeof description === "string" && description.includes("%") ? (
+          <span class="text-amber-500">{description}</span>
+        ) : type === "ERROR" ? (
+          <span class="text-red-500">{description}</span>
+        ) : type === "WARNING" ? (
           <span class="text-orange-500">{description}</span>
         ) : (
           <span class="text-blue-500">{description}</span>

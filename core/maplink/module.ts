@@ -32,4 +32,8 @@ export abstract class MaplinkModule<T extends ModuleScope | ModulePrivilegedScop
   protected get config() {
     return (this.#scope as ModulePrivilegedScope).config as T extends ModulePrivilegedScope ? _SDK.Config<any> : never;
   }
+
+  protected get monitor() {
+    return this.#scope.monitor;
+  }
 }
