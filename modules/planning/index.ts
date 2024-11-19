@@ -73,4 +73,12 @@ export class Planning extends MaplinkModule {
   async solution(jobId: string) {
     return this.api.get<_Planning.Solution.Data, _Planning.Api.Error>(`/solutions/${jobId}`);
   }
+
+  onUpdate(handler: (event: _SDK.Api.Event.Data, destroy: () => void) => Promise<void> | void) {
+    const listener = async (data: _SDK.Api.Event.Data) => {
+      handler(data, () => this.monitor.removeCallbackListener(listener));
+    };
+
+    this.monitor.onCallback(listener);
+  }
 }
