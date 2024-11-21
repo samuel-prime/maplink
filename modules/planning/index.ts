@@ -62,6 +62,32 @@ export class Planning extends MaplinkModule {
     });
   }
 
+  async problem<
+    LP extends string,
+    LC extends string,
+    VT extends string,
+    LZ extends string,
+    V extends string,
+    D extends string,
+    S extends string,
+    P extends string,
+  >(
+    problem: PlanningProblem<LP, LC, VT, LZ, V, D, S, P>,
+  ): Promise<Either<{ id: string }, Error | _Planning.Api.Error>> {
+    return this.api.post<{ id: string }, _Planning.Api.Error>("/problems", problem, {
+      callback: { url: this.server.url },
+      hooks: {
+        afterFetch: [
+          async (fetch) => {
+            const response = await fetch.response;
+            const { kind, value } = await response.data;
+            if (kind === "success") fetch.tag = value.id;
+          },
+        ],
+      },
+    });
+  }
+
   async events(jobId: string) {
     return this.api.get<_SDK.Api.Event.Data[], _Planning.Api.Error>("/events", { params: { jobId } });
   }
