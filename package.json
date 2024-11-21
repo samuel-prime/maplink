@@ -1,8 +1,13 @@
 {
   "name": "maplink-sdk",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "SDK library that provides easy access to Maplink's services.",
-  "keywords": ["maplink", "sdk", "geocoding", "logistics"],
+  "keywords": [
+    "maplink",
+    "sdk",
+    "geocoding",
+    "logistics"
+  ],
   "author": "Samuel Lucas <shemlouk@gmail.com>",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -18,7 +23,9 @@
       "import": "./dist/index.mjs"
     }
   },
-  "files": ["/dist"],
+  "files": [
+    "/dist"
+  ],
   "scripts": {
     "build": "tsup",
     "prebuild": "pnpm run lint",
