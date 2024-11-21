@@ -1,6 +1,6 @@
 {
   "name": "maplink-sdk",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "SDK library that provides easy access to Maplink's services.",
   "keywords": ["maplink", "sdk", "geocoding", "logistics"],
   "author": "Samuel Lucas <shemlouk@gmail.com>",
@@ -22,7 +22,9 @@
   "scripts": {
     "build": "tsup",
     "prebuild": "pnpm run lint",
-    "lint": "biome lint --write core modules utils index.ts"
+    "lint": "biome lint --write core modules utils index.ts",
+    "prepublish": "pnpm build",
+    "publish": "npm publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
