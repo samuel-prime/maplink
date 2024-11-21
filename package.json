@@ -1,6 +1,6 @@
 {
   "name": "maplink-sdk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "SDK library that provides easy access to Maplink's services.",
   "keywords": ["maplink", "sdk", "geocoding", "logistics"],
   "author": "Samuel Lucas <shemlouk@gmail.com>",
@@ -36,5 +36,6 @@
   },
   "dependencies": {
     "typed-html": "^3.0.1"
-  }
+  },
+  "bundleDependencies": true
 }

@@ -3,7 +3,7 @@ import type { ModulePrivilegedScope } from "core/maplink/scope";
 import type { _SDK } from "core/maplink/types";
 import { ServerEvent } from "lib/server/event";
 import type { HttpResponse } from "lib/server/response";
-import { EventEmitter } from "node:stream";
+import { EventEmitter } from "node:events";
 import { FetchEvent } from "./fetch-event";
 import { MonitorPage } from "./html";
 import { EventCard } from "./html/event-card";
