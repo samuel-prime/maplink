@@ -50,7 +50,6 @@ export class ApiRequest implements Prototype<ApiRequest>, _Api.Request.Config {
   }
 
   set body(body: _Api.Request.Config["body"]) {
-    assert(isObject(body) || ["string", "number", "undefined"].includes(typeof body), "Invalid body type.");
     this.#body = body;
     this.#setCallbackToBody();
   }
