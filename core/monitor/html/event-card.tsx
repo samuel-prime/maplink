@@ -1,9 +1,10 @@
 import type { _SDK } from "core/maplink/types";
+import { join } from "node:path";
 import * as elements from "typed-html";
 import type { FetchEvent } from "../fetch-event";
 import { EventStatus } from "./event-status";
 
-export function EventCard(fetchEvent: FetchEvent<any, any>, status?: _SDK.Api.Event.Data) {
+export function EventCard(fetchEvent: FetchEvent<any, any>, status?: _SDK.Api.Event.Data, serverEndpoint = "") {
   const { id, name, data } = fetchEvent;
   const { request, response, timestamp, duration } = data;
 
@@ -40,7 +41,11 @@ export function EventCard(fetchEvent: FetchEvent<any, any>, status?: _SDK.Api.Ev
               />
             ) : (
               data.jobId && (
-                <div hx-ext="sse" sse-connect="/fetch-stream/callback/html" sse-swap={data.jobId}>
+                <div
+                  hx-ext="sse"
+                  sse-connect={join(serverEndpoint, "/fetch-stream/callback/html")}
+                  sse-swap={data.jobId}
+                >
                   {status && (
                     <EventStatus
                       type={status.type}

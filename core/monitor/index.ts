@@ -21,10 +21,13 @@ export class Monitor extends MaplinkModule<ModulePrivilegedScope> {
   readonly #intervalId?: NodeJS.Timeout;
   readonly #eventEmitter = new EventEmitter();
   #events: Array<{ event: FetchEvent<unknown, unknown>; status?: _SDK.Api.Event.Data }> = [];
+  readonly #serverEndpoint: string;
 
   constructor(scope: ModulePrivilegedScope) {
     super(scope, Monitor.METADATA);
     this.logger.prefix = "[MONITOR]";
+
+    this.#serverEndpoint = new URL(scope.config.serverPublicUrl).pathname;
 
     this.api.on("fetchEnd", async (fetch) => {
       const event = await FetchEvent.create(fetch);
@@ -55,8 +58,9 @@ export class Monitor extends MaplinkModule<ModulePrivilegedScope> {
         MonitorPage({
           children: this.#events
             .toReversed()
-            .map(({ event, status }) => EventCard(event, status))
+            .map(({ event, status }) => EventCard(event, status, this.#serverEndpoint))
             .join("\n"),
+          serverEndpoint: this.#serverEndpoint,
         }),
       );
     });

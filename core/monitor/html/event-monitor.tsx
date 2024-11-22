@@ -1,12 +1,13 @@
+import { join } from "node:path";
 // biome-ignore lint:
 import * as elements from "typed-html";
 
-export function EventMonitor({ children }: elements.Children) {
+export function EventMonitor({ children, serverEndpoint }: { serverEndpoint: string } & elements.Children) {
   return (
     <div>
       <div
         hx-ext="sse"
-        sse-connect="/fetch-stream/html"
+        sse-connect={join(serverEndpoint, "/fetch-stream/html")}
         sse-swap="geocode,planning,trip"
         hx-swap="afterbegin"
         hx-target="#events-list"
