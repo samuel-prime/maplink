@@ -1,6 +1,6 @@
 {
   "name": "maplink-sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "SDK library that provides easy access to Maplink's services.",
   "keywords": [
     "maplink",
