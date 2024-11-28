@@ -16,7 +16,7 @@ export class Monitor extends MaplinkModule<ModulePrivilegedScope> {
     description: "Handles monitoring fetch events.",
   };
 
-  static readonly SPOIL_TIME = 2 * 60 * 60 * 1000; // 2 hours
+  static readonly SPOIL_TIME = 48 * 60 * 60 * 1000; // 2 days
 
   readonly #intervalId?: NodeJS.Timeout;
   readonly #eventEmitter = new EventEmitter();
