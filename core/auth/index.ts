@@ -18,7 +18,7 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
   static readonly #ENDPOINT = "/oauth/client_credential/accesstoken";
   static readonly #INTERVAL_BASE = 60 * 1000; // 1 minute
   static readonly #DEFAULT_INTERVAL = 30; // 30 minutes
-  static readonly #MAX_ATTEMPTS = 100;
+  static readonly #MAX_ATTEMPTS = 10;
 
   readonly #updateList: Api[] = [];
   readonly #intervalTime: number;
@@ -83,6 +83,7 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
     });
 
     if (response.kind === "failure") {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       const nextAttempt = attempt + 1;
 
       if (nextAttempt < Auth.#MAX_ATTEMPTS) {
@@ -91,8 +92,6 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
       }
 
       this.logger.warn("Max attempts to get a new token reached. Services will not be available.");
-      this.#stopTokenAutoRefresh();
-
       return new Failure(new Error("Maximum attempts to get the token has been reached."), response);
     }
 
