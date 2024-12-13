@@ -18,7 +18,7 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
   static readonly #ENDPOINT = "/oauth/client_credential/accesstoken";
   static readonly #INTERVAL_BASE = 60 * 1000; // 1 minute
   static readonly #DEFAULT_INTERVAL = 30; // 30 minutes
-  static readonly #MAX_ATTEMPTS = 3;
+  static readonly #MAX_ATTEMPTS = 100;
 
   readonly #updateList: Api[] = [];
   readonly #intervalTime: number;
