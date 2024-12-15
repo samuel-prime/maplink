@@ -117,7 +117,7 @@ export namespace _Planning {
       preAllocatedVehicleName?: V;
     }
 
-    export type Trip = any;
+    export type Trip = { calculationMode: "THE_FASTEST" | "THE_SHORTEST" };
     export type RestrictionZones = readonly string[];
   }
 
@@ -144,6 +144,7 @@ export namespace _Planning {
       status: null;
       violationConstraints: null;
       compartmentConfiguration: null;
+      tripId?: string;
     }
 
     export interface VehicleRoutePeriod {

@@ -56,8 +56,8 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
 
   async #init() {
     this.#logger.info("Starting SDK...");
-    await this.#loadRequiredModules();
     this.#loadModules();
+    await this.#loadRequiredModules();
     this.#logger.info("Package is ready.");
   }
 

@@ -5,6 +5,7 @@ import type { Logger } from "lib/logger";
 import type { HttpServer } from "lib/server";
 import type { Geocode } from "modules/geocode";
 import type { Planning } from "modules/planning";
+import type { Trip } from "modules/trip";
 import type { Constructor, FilterKeys, NonEmptyArray } from "utils/types";
 import type { MaplinkSDK } from ".";
 
@@ -76,6 +77,7 @@ export namespace _SDK {
     export interface Services {
       geocode: Geocode;
       planning: Planning;
+      trip: Trip;
     }
 
     export type Names = keyof Services;
