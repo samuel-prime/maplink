@@ -1,8 +1,8 @@
+import assert from "node:assert";
 import { MaplinkModule } from "core/maplink/module";
 import type { ModulePrivilegedScope } from "core/maplink/scope";
 import type { _SDK } from "core/maplink/types";
 import { Api } from "lib/api";
-import assert from "node:assert";
 import { Failure, Success } from "utils/either";
 import type { Either } from "utils/types";
 import { Token } from "./token";
@@ -18,7 +18,7 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
   static readonly #ENDPOINT = "/oauth/client_credential/accesstoken";
   static readonly #INTERVAL_BASE = 60 * 1000; // 1 minute
   static readonly #DEFAULT_INTERVAL = 30; // 30 minutes
-  static readonly #MAX_ATTEMPTS = 10;
+  static readonly #MAX_ATTEMPTS = 50;
 
   readonly #updateList: Api[] = [];
   readonly #intervalTime: number;
@@ -109,7 +109,6 @@ export class Auth extends MaplinkModule<ModulePrivilegedScope> {
   }
 
   #startTokenAutoRefresh() {
-    this.#stopTokenAutoRefresh();
     this.#intervalId = setInterval(this.refreshToken.bind(this), this.#intervalTime);
     this.logger.info("The token auto refresh process has started.");
   }
