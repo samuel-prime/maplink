@@ -1,9 +1,9 @@
+import assert from "node:assert";
 import { Auth } from "core/auth";
 import { Monitor } from "core/monitor";
 import { Api } from "lib/api";
 import { Logger } from "lib/logger";
 import { HttpServer } from "lib/server";
-import assert from "node:assert";
 import { MaplinkModule } from "./module";
 import { ModulePrivilegedScope, ModuleScope } from "./scope";
 import type { _SDK } from "./types";
@@ -72,6 +72,12 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
         this.#logger.info("Package is ready.");
       })
       .once()
+      .global();
+
+    this.#api
+      .beforeFetch(async () => {
+        await this.#auth.refreshToken();
+      })
       .global();
 
     this.#loadModules();
