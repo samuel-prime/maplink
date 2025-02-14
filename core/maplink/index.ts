@@ -70,14 +70,14 @@ export class MaplinkSDK<T extends _SDK.Module.ConfigList> {
         const { token } = await this.#loadRequiredModules();
         fetch.request.headers.authorization = `Bearer ${token}`;
         this.#logger.info("Package is ready.");
+
+        this.#api
+          .beforeFetch(async () => {
+            await this.#auth.refreshToken();
+          })
+          .global();
       })
       .once()
-      .global();
-
-    this.#api
-      .beforeFetch(async () => {
-        await this.#auth.refreshToken();
-      })
       .global();
 
     this.#loadModules();
